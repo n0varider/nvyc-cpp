@@ -1,5 +1,23 @@
 .vscode/
 
+build/
+
+# Ignore main, currently used for testing
 main.cpp
 
-test.nvy
+# Ignore test compilation files
+*.nvy
+
+# Ignoring until full pass is done
+CMakeLists.txt
+
+# Binary/debug
+*.exe
+
+*.pdb
+
+*.obj
+
+*.lib
+
+*.dll
