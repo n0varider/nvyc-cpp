@@ -14,16 +14,16 @@ namespace nvyc::generation {
 
     class Lexer {
         private:
-            std::unordered_map<std::string, NodeType> rep;
-        
             Lexer();
             void init();
             NodeType numericNativeType(const std::string& s) const;
             static const std::unordered_set<nvyc::data::NodeType> NUMERICS;
         
         public:
+            std::unordered_map<std::string, NodeType> rep;
             static Lexer& getInstance();
             NodeStream* lex(const std::vector<std::string>& lines);
+            NodeStream* convertNumeric(NodeType type, const std::string& value);
             
     }; // Lexer
 

@@ -178,6 +178,8 @@ inline std::string nodeTypeToString(NodeType t) {
         to the same string
     */
     inline std::string getStringValue(NodeType type, void* data) {
+        if(!data) return "VOID";
+        
         switch(type) {
             case NodeType::INT32: {
                 int32_t value = *static_cast<int32_t*>(data);
