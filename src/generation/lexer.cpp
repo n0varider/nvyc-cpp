@@ -214,9 +214,12 @@ NodeStream* nvyc::generation::Lexer::lex(const std::vector<std::string>& lines) 
                         value.pop_back();
                     }
                     value.erase(std::remove(value.begin(), value.end(), '_'), value.end());
+                    current = convertNumeric(type, value);
+                }else{
+                    current = new NodeStream(type, new std::string(value));
                 }
 
-                current = convertNumeric(type, value);
+            
                 head->setNext(current);
                 current->setPrev(head);
                 head = head->getNext();

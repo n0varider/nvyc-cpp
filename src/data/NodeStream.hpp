@@ -146,6 +146,18 @@ public:
 		return current;
 	}
 
+	NodeStream* forward(int dist) {
+		NodeStream* current = this;
+		for(int i = 0; i < dist; i++) {
+			if(current) current = current->getNext();
+		}
+		return current;
+	}
+
+	NodeStream* get() {
+		return this;
+	}
+
 	std::string asString() {
 		std::ostringstream oss;
 		oss << "NodeStream(" << nodeTypeToString(type) << ", " << getStringValue(type, dptr) << ")";

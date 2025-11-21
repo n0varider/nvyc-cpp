@@ -18,7 +18,7 @@ namespace nvyc::data {
             bool owned;
 
         public:
-            NASTNode(void* p, NodeType t, bool owned) : dptr(p), type(t), owned(owned) {}
+            NASTNode(NodeType t, void* p, bool owned = true) : dptr(p), type(t), owned(owned) {}
             ~NASTNode() {
                 for(auto subnode : subnodes) {
                     subnode->free();
@@ -69,7 +69,10 @@ namespace nvyc::data {
                     oss << "Node(" << nodeTypeToString(type) << ", " << getStringValue(type, dptr) << ")\n";
                     if(!subnodes.empty()) {
                             for(auto subnode: subnodes) {
+                                if(subnode) 
                                     oss << subnode->asStringHelper(child + "        -- ", child + "         ");
+                                else
+                                    oss << "Null node\n";
                             }
                     }
                     return oss.str();

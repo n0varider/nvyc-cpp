@@ -4,8 +4,8 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include "../data/NodeStream.hpp"
-#include "../data/NodeType.hpp"
+#include "data/NodeStream.hpp"
+#include "data/NodeType.hpp"
 
 using nvyc::data::NodeStream;
 using nvyc::data::NodeType;
