@@ -71,6 +71,37 @@ namespace nvyc::utils {
     // -                CONDITIONALS                -
     // ----------------------------------------------
 
+    std::unique_ptr<NASTNode> ParserUtils::createConditional() {
+        auto conditionalHead = createNode(NodeType::IF, nullptr);
+        auto conditionalCondition = createNode(NodeType::CONDITION, nullptr);
+        auto conditionalBody = createNode(NodeType::FUNCTIONBODY, nullptr);
+        auto conditionalElse = createNode(NodeType::ELSE, nullptr);
+
+        conditionalHead->addSubnode(std::move(conditionalCondition));
+        conditionalHead->addSubnode(std::move(conditionalBody));
+        conditionalHead->addSubnode(std::move(conditionalElse));
+
+        return conditionalHead;
+    }
+
+    void ParserUtils::setCondition(NASTNode& conditional, std::unique_ptr<NASTNode> condition) {
+        conditional.getSubnode(ParserUtils::CONDITIONAL_COND)->addSubnode(std::move(condition));
+    }
+
+    void ParserUtils::addConditionalIfBody(NASTNode& conditional, std::unique_ptr<NASTNode> ifNode) {
+        addBodyNode(conditional, std::move(ifNode));
+    }
+
+    void ParserUtils::addConditionalElseBody(NASTNode& conditional, std::unique_ptr<NASTNode> elseNode) {
+        conditional.getSubnode(ParserUtils::CONDITIONAL_ELSE)->addSubnode(std::move(elseNode));
+    }
+
+
+    // ----------------------------------------------
+    // -                VARIABLES                   -
+    // ----------------------------------------------
+
+
 
 
 } // namespace nvyc::utils
