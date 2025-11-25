@@ -4,6 +4,7 @@
 #include "data/NodeType.hpp"
 #include <string>
 #include <variant>
+#include <memory>
 
 using nvyc::data::NASTNode;
 using nvyc::data::NodeType;
@@ -21,21 +22,25 @@ namespace nvyc::utils {
     */
 
 
-    NASTNode* ParserUtils::createFunction(const std::string& name) {
-        NASTNode* root = createNode(NodeType::FUNCTION, new std::string(name));
-        NASTNode* functionArgs = createNode(NodeType::FUNCTIONPARAM, nullptr);
-        NASTNode* functionReturn = createNode(NodeType::FUNCTIONRETURN, nullptr);
-        NASTNode* functionBody = createNode(NodeType::FUNCTIONBODY, nullptr);
+    std::unique_ptr<NASTNode> ParserUtils::createFunction(const std::string& name) {
+        auto root = createNode(NodeType::FUNCTION, new std::string(name));
+        auto functionArgs = createNode(NodeType::FUNCTIONPARAM, nullptr);
+        auto functionReturn = createNode(NodeType::FUNCTIONRETURN, nullptr);
+        auto functionBody = createNode(NodeType::FUNCTIONBODY, nullptr);
         
-        root->addSubnode(functionArgs);
-        root->addSubnode(functionReturn);
-        root->addSubnode(functionBody);
+        root->addSubnode(std::move(functionArgs));
+        root->addSubnode(std::move(functionReturn));
+        root->addSubnode(std::move(functionBody));
 
         return root;
     }
 
-    void ParserUtils::addFunctionBody(NASTNode& function, NASTNode& body) {
-        function.getSubnode(ParserUtils::FUNCTION_BODY)->addSubnode(&body);
+    void ParserUtils::addFunctionBody(NASTNode& function, std::unique_ptr<NASTNode> body) {
+        function.getSubnode(ParserUtils::FUNCTION_BODY)->addSubnode(std::move(body));
+    }
+
+    void ParserUtils::addFunctionArg(NASTNode& function, std::unique_ptr<NASTNode> body) {
+
     }
 
 

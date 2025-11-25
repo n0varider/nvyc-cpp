@@ -2,6 +2,7 @@
 #include "utils/ParserUtils.hpp"
 #include "data/Symbols.hpp"
 #include <iostream>
+#include <memory>
 
 int advance = 0;
 using nvyc::utils::ParserUtils;
@@ -32,16 +33,17 @@ NASTNode* nvyc::generation::Parser::parseFunction(NodeStream& stream) {
 
     std::cout << functionNode->asString() << std::endl;
 
-    NASTNode* functionParams = new NASTNode(NodeType::FUNCTIONPARAM, nullptr);
-    NASTNode* functionReturn = new NASTNode(NodeType::FUNCTIONRETURN, nullptr);
-    NASTNode* functionBody = new NASTNode(NodeType::FUNCTIONBODY, nullptr);
+    auto functionParams = ParserUtils::createNode(NodeType::FUNCTIONPARAM, nullptr);
+    auto functionReturn = ParserUtils::createNode(NodeType::FUNCTIONRETURN, nullptr);
+    auto functionBody = ParserUtils::createNode(NodeType::FUNCTIONBODY, nullptr);
 
     while(streamptr->getType() != NodeType::CLOSEPARENS) {
         NodeType varType = streamptr->getType();
         void* varNamePtr = streamptr->getNext()->getData();
         std::string varName = nvyc::data::getStringValue(NodeType::STR, varNamePtr);
-        NASTNode* variableNode = new NASTNode(NodeType::VARIABLE, new std::string(varName));
-        functionParams->addSubnode(variableNode);
+        auto variableNode = ParserUtils::createNode(NodeType::VARIABLE, new std::string(varName));
+
+        functionParams->addSubnode(std::move(variableNode));
     
         streamptr = streamptr->forward(ParserUtils::FUNCTION_FORWARD_NEXTARG);
         if(streamptr->getType() == NodeType::COMMADELIMIT) streamptr = streamptr->getNext();
@@ -49,12 +51,12 @@ NASTNode* nvyc::generation::Parser::parseFunction(NodeStream& stream) {
 
     streamptr = streamptr->forward(3); // Point at return type
 
-    NASTNode* returnType = new NASTNode(streamptr->getType(), nullptr);
-    functionReturn->addSubnode(returnType);
+    auto returnType = ParserUtils::createNode(streamptr->getType(), nullptr);
+    functionReturn->addSubnode(std::move(returnType));
 
-    functionNode->addSubnode(functionParams);
-    functionNode->addSubnode(functionReturn);
-    functionNode->addSubnode(functionBody);
+    functionNode->addSubnode(std::move(functionParams));
+    functionNode->addSubnode(std::move(functionReturn));
+    functionNode->addSubnode(std::move(functionBody));
 
     return functionNode;
 }

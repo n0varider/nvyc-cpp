@@ -15,9 +15,6 @@ namespace nvyc::generation {
     class Parser {
 
         private:
-            static constexpr bool LOCAL_EXPRESSION = false;
-            static constexpr bool ENCLOSED_EXPRESSION = true;
-
             // Struct
             NASTNode* parseStruct(NodeStream& stream);
 

@@ -12,18 +12,14 @@ namespace nvyc::data {
 
     class NASTNode {
         private:
-            std::vector<NASTNode*> subnodes;
+            std::vector<std::unique_ptr<NASTNode>> subnodes;
             NodeType type;
-            void* dptr;
+            void* dptr; // Move to unique_ptr with custom ReleaseStream deletion function
             bool owned;
 
         public:
             NASTNode(NodeType t, void* p, bool owned = true) : dptr(p), type(t), owned(owned) {}
             ~NASTNode() {
-                for(auto subnode : subnodes) {
-                    subnode->free();
-                    delete subnode;
-                }
                 free();
             }
 
@@ -47,16 +43,17 @@ namespace nvyc::data {
                     return owned;
             }
 
-            std::vector<NASTNode*> getSubnodes() const {
+            std::vector<std::unique_ptr<NASTNode>>& getSubnodes() {
                 return subnodes;
             }   
 
-            void addSubnode(NASTNode* node) {
-                    subnodes.push_back(node);
+            void addSubnode(std::unique_ptr<NASTNode> node) {
+                    subnodes.push_back(std::move(node));
             }
 
+            // Cannot move ownership, so returning raw ptr is fine
             NASTNode* getSubnode(int node) {
-                    return subnodes.at(node); // Automatically throws error if OOB
+                    return subnodes.at(node).get(); // Automatically throws error if OOB
             }
 
             std::string asString() {
@@ -68,7 +65,7 @@ namespace nvyc::data {
                     oss << prefix;
                     oss << "Node(" << nodeTypeToString(type) << ", " << getStringValue(type, dptr) << ")\n";
                     if(!subnodes.empty()) {
-                            for(auto subnode: subnodes) {
+                            for(const auto& subnode: subnodes) {
                                 if(subnode) 
                                     oss << subnode->asStringHelper(child + "        -- ", child + "         ");
                                 else

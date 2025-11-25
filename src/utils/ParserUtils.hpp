@@ -5,6 +5,7 @@
 #include "data/NodeType.hpp"
 #include <string>
 #include <variant>
+#include <memory>
 
 using nvyc::data::NASTNode;
 using nvyc::data::NodeType;
@@ -52,54 +53,53 @@ namespace nvyc::utils {
             static constexpr int FORLOOP_BODY = 3;
 
             // Generic
-            inline static NASTNode* createNode(NodeType type, void* value) {
-                NASTNode* node = new NASTNode(type, value);
-                return node;
+            inline static std::unique_ptr<NASTNode> createNode(NodeType type, void* value) {
+                return std::make_unique<NASTNode>(type, value);
             }
 
             void addBodyNode(NASTNode& node, NASTNode& bodyNode);
 
             // Functions
-            NASTNode* createFunction(const std::string& name);
-            void addFunctionBody(NASTNode& function, NASTNode& body);
-            void addFunctionArg(NASTNode& function, NASTNode& arg);
+            std::unique_ptr<NASTNode> createFunction(const std::string& name);
+            void addFunctionBody(NASTNode& function, std::unique_ptr<NASTNode> body);
+            void addFunctionArg(NASTNode& function, std::unique_ptr<NASTNode> arg);
             void setFunctionReturnType(NASTNode& function, NodeType type);
             
-            NASTNode* createFunctionCall(const std::string& name);
-            void addFunctionCallArg(NASTNode& function,  NASTNode& arg);
+            std::unique_ptr<NASTNode> createFunctionCall(const std::string& name);
+            void addFunctionCallArg(NASTNode& function,  std::unique_ptr<NASTNode> arg);
 
             // Conditionals
-            NASTNode* createConditional();
-            void setCondition(NASTNode& conditional, NASTNode& condition);
-            void addConditionalIfBody(NASTNode& conditional, NASTNode& ifNode);
-            void addConditionalElseBody(NASTNode& conditional,  NASTNode& elseNode);
+            std::unique_ptr<NASTNode> createConditional();
+            void setCondition(NASTNode& conditional, std::unique_ptr<NASTNode> condition);
+            void addConditionalIfBody(NASTNode& conditional, std::unique_ptr<NASTNode> ifNode);
+            void addConditionalElseBody(NASTNode& conditional,  std::unique_ptr<NASTNode> elseNode);
 
             // Variables
-            NASTNode* defineVariable(const std::string& name);
-            NASTNode* createVariable(const std::string& name);
+            std::unique_ptr<NASTNode> defineVariable(const std::string& name);
+            std::unique_ptr<NASTNode> createVariable(const std::string& name);
             // NASTNode* assignVariable(const std::string& name, const NASTNode& value);
-            void setVariableValue(NASTNode& variable, NASTNode& value);
+            void setVariableValue(NASTNode& variable, std::unique_ptr<NASTNode> value);
             void castVariable(NASTNode& variable, NodeType cast);
             void castVariableToStruct(NASTNode& variable,  std::string& structName);
 
             // Returns
-            NASTNode* createReturn(NASTNode& value);
+            std::unique_ptr<NASTNode> createReturn(NASTNode& value);
             
             // Structs
-            NASTNode* createStruct(const std::string& name);
-            void addStructNode(NASTNode& structName,  NASTNode& member);
-            NASTNode* accessStructMember(const std::string& variable);
+            std::unique_ptr<NASTNode> createStruct(const std::string& name);
+            void addStructNode(NASTNode& structName,  std::unique_ptr<NASTNode> member);
+            std::unique_ptr<NASTNode> accessStructMember(const std::string& variable);
 
             // Loops
-            NASTNode* createForLoop();
-            void setLoopDefinition(NASTNode& loop, NASTNode& definition);
-            void setLoopCondition(NASTNode& loop, NASTNode& condition);
-            void setLoopIteration(NASTNode& loop, NASTNode& iteration);
-            void addLoopBody(NASTNode& loop, NASTNode& bodyNode);
+            std::unique_ptr<NASTNode> createForLoop();
+            void setLoopDefinition(NASTNode& loop, std::unique_ptr<NASTNode> definition);
+            void setLoopCondition(NASTNode& loop, std::unique_ptr<NASTNode> condition);
+            void setLoopIteration(NASTNode& loop, std::unique_ptr<NASTNode> iteration);
+            void addLoopBody(NASTNode& loop, std::unique_ptr<NASTNode> bodyNode);
 
             // Arrays
-            NASTNode* createArray(NodeType type, int size);
-            NASTNode* accessArray(const std::string& name, std::variant<int, std::string> index);
+            std::unique_ptr<NASTNode> createArray(NodeType type, int size);
+            std::unique_ptr<NASTNode> accessArray(const std::string& name, std::variant<int, std::string> index);
 
     }; // ParserUtils
 
