@@ -2,6 +2,7 @@
 #include "data/NodeStream.hpp"
 #include "data/NASTNode.hpp"
 #include "data/NodeType.hpp"
+#include "data/Symbols.hpp"
 #include <string>
 #include <variant>
 #include <memory>
@@ -11,17 +12,34 @@ using nvyc::data::NodeType;
 
 namespace nvyc::utils {
 
-    /*
-    
-        It isn't safe to just pass references around since
-        the caller and the ASTNode will both own the memory,
-        which could result in a double delete.
-
-        Move to std::unique_ptr
-    
-    */
+    void ParserUtils::addBodyNode(NASTNode& node, std::unique_ptr<NASTNode> bodyNode) {
+        NodeType type = node.getType();
 
 
+        if(type == NodeType::VARDEF || type == NodeType::STRUCT) {
+            node.addSubnode(std::move(bodyNode));
+            return;
+        }
+
+        int bodyIndex = 0;
+
+        switch(type) {
+            case NodeType::FUNCTION: bodyIndex = ParserUtils::FUNCTION_BODY;
+            case NodeType::IF: bodyIndex = ParserUtils::CONDITIONAL_BODY;
+            case NodeType::FORLOOP: bodyIndex = ParserUtils::FORLOOP_BODY;
+            default: 
+                // Runtime errors on windows just show the "Not responding" box so print to console
+                std::cout << "Unknown branch: " << nodeTypeToString(type) << std::endl;
+                throw std::runtime_error("Unknown branch: " + nodeTypeToString(type));
+        }
+
+        node.getSubnode(bodyIndex)->addSubnode(std::move(bodyNode));
+    }
+
+
+    // ----------------------------------------------
+    // -                FUNCTIONS                   -
+    // ----------------------------------------------
     std::unique_ptr<NASTNode> ParserUtils::createFunction(const std::string& name) {
         auto root = createNode(NodeType::FUNCTION, new std::string(name));
         auto functionArgs = createNode(NodeType::FUNCTIONPARAM, nullptr);
@@ -36,12 +54,22 @@ namespace nvyc::utils {
     }
 
     void ParserUtils::addFunctionBody(NASTNode& function, std::unique_ptr<NASTNode> body) {
-        function.getSubnode(ParserUtils::FUNCTION_BODY)->addSubnode(std::move(body));
+        addBodyNode(function, std::move(body));
     }
 
-    void ParserUtils::addFunctionArg(NASTNode& function, std::unique_ptr<NASTNode> body) {
-
+    void ParserUtils::addFunctionArg(NASTNode& function, std::unique_ptr<NASTNode> arg) {
+        function.getSubnode(ParserUtils::FUNCTION_ARGS)->addSubnode(std::move(arg));
     }
+
+    void ParserUtils::setFunctionReturnType(NASTNode& function, NodeType type) {
+        function.setType(type);
+    }
+
+
+
+    // ----------------------------------------------
+    // -                CONDITIONALS                -
+    // ----------------------------------------------
 
 
 
