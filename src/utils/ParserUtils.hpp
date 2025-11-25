@@ -57,7 +57,7 @@ namespace nvyc::utils {
                 return std::make_unique<NASTNode>(type, value);
             }
 
-            void addBodyNode(NASTNode& node, NASTNode& bodyNode);
+            void addBodyNode(NASTNode& node, std::unique_ptr<NASTNode> bodyNode);
 
             // Functions
             std::unique_ptr<NASTNode> createFunction(const std::string& name);
@@ -87,7 +87,7 @@ namespace nvyc::utils {
             
             // Structs
             std::unique_ptr<NASTNode> createStruct(const std::string& name);
-            void addStructNode(NASTNode& structName,  std::unique_ptr<NASTNode> member);
+            void addStructNode(NASTNode& structNode,  std::unique_ptr<NASTNode> member);
             std::unique_ptr<NASTNode> accessStructMember(const std::string& variable);
 
             // Loops

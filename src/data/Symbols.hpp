@@ -202,6 +202,8 @@ inline std::string nodeTypeToString(NodeType t) {
             case NodeType::FUNCTION: {
                 return *static_cast<std::string*>(data);
             }
+            case NodeType::CAST:
+                return nodeTypeToString(*static_cast<NodeType*>(data));
             default: {
                 return "VOID";
             }
