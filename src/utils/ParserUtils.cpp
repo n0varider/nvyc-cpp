@@ -126,6 +126,20 @@ namespace nvyc::utils {
     }
 
 
+
+    // ----------------------------------------------
+    // -                RETURNS                     -
+    // ----------------------------------------------
+
+    std::unique_ptr<NASTNode> ParserUtils::createReturn(std::unique_ptr<NASTNode> value) {
+        auto returnNode = createNode(NodeType::RETURN, nullptr);
+        
+        returnNode->addSubnode(std::move(value));
+
+        return returnNode;
+    }
+
+
     // ----------------------------------------------
     // -                STRUCTS                     -
     // ----------------------------------------------
