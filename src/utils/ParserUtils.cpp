@@ -139,6 +139,8 @@ namespace nvyc::utils {
     }
 
     std::unique_ptr<NASTNode> ParserUtils::accessStructMember(const std::string& variable) {
+        
+        // Split variable at '.' such as x.y being var x -> access member y
         std::vector<std::string> elems; 
         std::stringstream ss(variable);
         std::string item;
@@ -149,6 +151,7 @@ namespace nvyc::utils {
 
         if(elems.empty()) return nullptr; // Should ideally error if this ever happens
 
+        // Get full member depth (x.y.z)
         auto root = createNode(NodeType::VARIABLE, new std::string(elems[0]));
         NASTNode* current = root.get();
 
@@ -157,6 +160,68 @@ namespace nvyc::utils {
             current->addSubnode(std::move(memberNode));
             current = current->getSubnode(0);
         }
+
+        return root;
+    }
+
+    // ----------------------------------------------
+    // -                  LOOPS                     -
+    // ----------------------------------------------
+
+    std::unique_ptr<NASTNode> ParserUtils::createForLoop() {
+        auto loopHead = createNode(NodeType::FORLOOP, nullptr);
+        auto loopDefinition = createNode(NodeType::LOOPDEF, nullptr);
+        auto loopCondition = createNode(NodeType::LOOPCOND, nullptr);
+        auto loopIteration = createNode(NodeType::LOOPITERATION, nullptr);
+        auto loopBody = createNode(NodeType::FUNCTIONBODY, nullptr);
+
+        loopHead->addSubnode(std::move(loopDefinition));
+        loopHead->addSubnode(std::move(loopCondition));
+        loopHead->addSubnode(std::move(loopIteration));
+        loopHead->addSubnode(std::move(loopBody));
+    }
+
+    void ParserUtils::setLoopDefinition(NASTNode& loop, std::unique_ptr<NASTNode> definition) {
+        loop.getSubnode(ParserUtils::FORLOOP_DEFINITION)->addSubnode(std::move(definition));
+    }
+
+    void ParserUtils::setLoopCondition(NASTNode& loop, std::unique_ptr<NASTNode> condition) {
+        loop.getSubnode(ParserUtils::FORLOOP_CONDITION)->addSubnode(std::move(condition));
+    }
+
+    void ParserUtils::setLoopIteration(NASTNode& loop, std::unique_ptr<NASTNode> iteration) {
+        loop.getSubnode(ParserUtils::FORLOOP_ITERATION)->addSubnode(std::move(iteration));
+    }
+
+    void ParserUtils::addLoopBody(NASTNode& loop, std::unique_ptr<NASTNode> bodyNode) {
+        addBodyNode(loop, std::move(bodyNode));
+    }
+
+
+
+    // ----------------------------------------------
+    // -                  ARRAYS                    -
+    // ----------------------------------------------
+
+    std::unique_ptr<NASTNode> ParserUtils::createArray(NodeType type, int size) {
+        auto arrayNode = createNode(NodeType::ARRAY, new NodeType(type));
+        auto arraySize = createNode(NodeType::ARRAY_SIZE, new int(size));
+
+        arrayNode->addSubnode(std::move(arraySize));
+
+        return arrayNode;
+
+    }
+
+    std::unique_ptr<NASTNode> ParserUtils::accessArray(const std::string& name, std::variant<int, std::string> index) {
+        auto accessNode = createNode(NodeType::ARRAY_ACCESS, nullptr);
+        auto arrayName = createNode(NodeType::ARRAY, new std::string(name));
+        auto arrayIndex = createNode(NodeType::ARRAY_INDEX, new std::variant<int, std::string>(index));
+    
+        accessNode->addSubnode(std::move(arrayName));
+        accessNode->addSubnode(std::move(arrayIndex));
+
+        return accessNode;
     }
 
 
