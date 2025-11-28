@@ -83,7 +83,7 @@ namespace nvyc::utils {
             void castVariableToStruct(NASTNode& variable,  std::string& structName);
 
             // Returns
-            std::unique_ptr<NASTNode> createReturn(NASTNode& value);
+            std::unique_ptr<NASTNode> createReturn(std::unique_ptr<NASTNode> value);
             
             // Structs
             std::unique_ptr<NASTNode> createStruct(const std::string& name);
