@@ -5,20 +5,20 @@
 
 // There is probably a better way to format all of this
 
-const std::unordered_set<NodeType> nvyc::generation::Lexer::NUMERICS = {
+const std::unordered_set<NodeType> nvyc::Lexer::NUMERICS = {
     NodeType::INT32, NodeType::INT64, NodeType::FP32, NodeType::FP64
 };
 
-nvyc::generation::Lexer& nvyc::generation::Lexer::getInstance() {
+nvyc::Lexer& nvyc::Lexer::getInstance() {
     static Lexer instance;
     return instance;
 }
 
-nvyc::generation::Lexer::Lexer() {
+nvyc::Lexer::Lexer() {
     init();
 }
 
-void nvyc::generation::Lexer::init() {
+void nvyc::Lexer::init() {
     // Keywords
     rep["let"] = NodeType::VARDEF;
     rep["true"] = NodeType::BOOL_T;
@@ -92,7 +92,7 @@ void nvyc::generation::Lexer::init() {
     rep["\\"] = NodeType::BSLASH;
 }
 
-NodeType nvyc::generation::Lexer::numericNativeType(const std::string& s) const {
+NodeType nvyc::Lexer::numericNativeType(const std::string& s) const {
     try { 
         std::stoi(s); return NodeType::INT32; 
     } catch (...) {
@@ -130,7 +130,7 @@ NodeType nvyc::generation::Lexer::numericNativeType(const std::string& s) const 
     }
 }
 
-NodeStream* nvyc::generation::Lexer::lex(const std::vector<std::string>& lines) {
+NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
     NodeStream* head = new NodeStream(NodeType::PROGRAM, nullptr);
     NodeStream* sentinel = head;
     NodeStream* current;
@@ -243,7 +243,7 @@ NodeStream* nvyc::generation::Lexer::lex(const std::vector<std::string>& lines) 
     return sentinel;
 }
 
-NodeStream* nvyc::generation::Lexer::convertNumeric(NodeType type, const std::string& value) {
+NodeStream* nvyc::Lexer::convertNumeric(NodeType type, const std::string& value) {
     switch(type) {
         case NodeType::INT32:
             return new NodeStream(type, new int32_t(std::stoi(value)));

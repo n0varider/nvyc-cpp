@@ -8,7 +8,7 @@
 #include <sstream>
 #include <iostream>
 
-namespace nvyc::data {
+namespace nvyc {
 
     class NASTNode {
         private:
@@ -75,4 +75,4 @@ namespace nvyc::data {
                     return oss.str();
                 }
         }; // NASTNode
-} // namespace nvyc::data
+} // namespace nvyc

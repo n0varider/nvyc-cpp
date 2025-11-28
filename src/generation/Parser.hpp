@@ -6,30 +6,30 @@
 #include <stack>
 #include <vector>
 
-using nvyc::data::NASTNode;
-using nvyc::data::NodeStream;
-using nvyc::data::NodeType;
+using nvyc::NASTNode;
+using nvyc::NodeStream;
+using nvyc::NodeType;
 
-namespace nvyc::generation {
+namespace nvyc {
 
     class Parser {
 
         private:
             // Struct
-            NASTNode* parseStruct(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseStruct(NodeStream& stream);
 
             // Block statements
-            NASTNode* parseFunction(NodeStream& stream);
-            NASTNode* parseForLoop(NodeStream& stream);
-            NASTNode* parseWhileLoop(NodeStream& stream);
-            NASTNode* parseConditional(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseFunction(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseForLoop(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseWhileLoop(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseConditional(NodeStream& stream);
 
             // Expressions
-            NASTNode* parseAssign(NodeStream& stream);
-            NASTNode* parseVardef(NodeStream& stream);
-            NASTNode* parseReturn(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseAssign(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseVardef(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseReturn(NodeStream& stream);
             NodeStream* getExpression(const NodeStream& stream);
-            NASTNode* parseExpression(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseExpression(NodeStream& stream);
             void processOperator(std::stack<NodeType>& operatorStack, std::stack<NASTNode*>& valueStack);
 
             // Utility
@@ -37,7 +37,7 @@ namespace nvyc::generation {
             std::vector<NodeStream*> parselist(NodeStream& root);
 
         public:
-            NASTNode* parse(NodeStream& stream);
+            std::unique_ptr<NASTNode> parse(NodeStream& stream);
 
     }; // Parser
 

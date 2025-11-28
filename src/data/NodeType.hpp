@@ -1,6 +1,6 @@
 #pragma once
 
-namespace nvyc::data {
+namespace nvyc {
 
 enum class NodeType {
 
@@ -63,4 +63,4 @@ enum class NodeType {
     DIRUSERTYPE
 }; // NodeType
 
-} // namespace nvyc::data
+} // namespace nvyc

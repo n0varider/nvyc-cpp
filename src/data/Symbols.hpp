@@ -4,7 +4,7 @@
 #include <cstdint>
 #include "NodeType.hpp"
 
-namespace nvyc::data {
+namespace nvyc {
 
 // Not sure this is optimal
 inline std::string nodeTypeToString(NodeType t) {

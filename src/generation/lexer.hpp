@@ -7,17 +7,17 @@
 #include "data/NodeStream.hpp"
 #include "data/NodeType.hpp"
 
-using nvyc::data::NodeStream;
-using nvyc::data::NodeType;
+using nvyc::NodeStream;
+using nvyc::NodeType;
 
-namespace nvyc::generation {
+namespace nvyc {
 
     class Lexer {
         private:
             Lexer();
             void init();
             NodeType numericNativeType(const std::string& s) const;
-            static const std::unordered_set<nvyc::data::NodeType> NUMERICS;
+            static const std::unordered_set<NodeType> NUMERICS;
         
         public:
             std::unordered_map<std::string, NodeType> rep;

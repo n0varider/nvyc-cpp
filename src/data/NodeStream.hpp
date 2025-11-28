@@ -8,7 +8,7 @@
 #include <string>
 #include <sstream>
 
-namespace nvyc::data {
+namespace nvyc {
 
 class NodeStream {
 private:
@@ -165,4 +165,4 @@ public:
 	}
 }; // NodeStream
 
-} // namespace nvyc::data
+} // namespace nvyc
