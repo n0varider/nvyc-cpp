@@ -168,7 +168,7 @@ public:
 			copy = copy->getNext();
 		}
 
-		return copy;
+		return copy->backtrack();
 	}
 
 	// Creates deep copy of stream and automatically moves to node it was copied at

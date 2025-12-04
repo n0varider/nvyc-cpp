@@ -19,7 +19,8 @@ namespace nvyc::symbols {
         NodeType::VARDEF, NodeType::FUNCTION, NodeType::IF,
         NodeType::ELSE, NodeType::FORLOOP, NodeType::WHILELOOP,
         NodeType::NATIVE, NodeType::PUBLIC, NodeType::PRIVATE,
-        NodeType::FINAL, NodeType::CONSTANT, NodeType::STRUCT
+        NodeType::FINAL, NodeType::CONSTANT, NodeType::STRUCT,
+        NodeType::ENDOFLINE
     };
 
     inline const std::unordered_set<NodeType> LITERAL_SYMBOLS = {
@@ -301,6 +302,7 @@ inline std::string nodeTypeToString(NodeType t) {
                 return std::to_string(value);
             }
             case NodeType::VARIABLE: 
+            case NodeType::VARDEF:
             case NodeType::STR:
             case NodeType::FUNCTION: {
                 return *static_cast<std::string*>(data);

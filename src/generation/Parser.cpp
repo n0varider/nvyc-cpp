@@ -10,6 +10,7 @@ using nvyc::NodeStream;
 using nvyc::NodeType;
 
 int advance = 0;
+bool isNativeFunction = false;
 
 std::unique_ptr<NASTNode> nvyc::Parser::parse(NodeStream& stream) {
 
@@ -21,7 +22,7 @@ std::unique_ptr<NASTNode> nvyc::Parser::parse(NodeStream& stream) {
             node = parseFunction(stream);
             break;
         case NodeType::VARDEF:
-            // node = parseVardef(stream);
+            node = parseVardef(stream);
             break;
         default:
             node = nullptr;
@@ -39,7 +40,6 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
     streamptr = streamptr->forward(nvyc::ParserUtils::FUNCTION_FORWARD_FIRSTARG); 
     auto functionNode = nvyc::ParserUtils::createFunction(functionName);
 
-    nvyc::ParserUtils::createFunction(functionName);
     // Loop until every function parameter is parsed
     while(streamptr->getType() != NodeType::CLOSEPARENS) {
         NodeType varType = streamptr->getType();
@@ -58,7 +58,30 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
     auto returnType = streamptr->getType();
     nvyc::ParserUtils::setFunctionReturnType(*functionNode, returnType);
 
+    // Walk through body and parse
+
+    if(!isNativeFunction) {
+        streamptr = streamptr->forward(nvyc::ParserUtils::FUNCTION_FORWARD_FIRSTEXPR);
+        std::vector<std::unique_ptr<NASTNode>> bodyNodes = parseBodyNodes(*streamptr);
+        for(auto& bodyNode : bodyNodes) {
+            nvyc::ParserUtils::addFunctionBody(*functionNode, std::move(bodyNode));
+        }
+    }
+
     return functionNode;
+}
+
+std::unique_ptr<NASTNode> nvyc::Parser::parseVardef(NodeStream& stream) {
+    NodeStream* streamptr = &stream;
+    std::string name = nvyc::symbols::getStringValue(NodeType::VARIABLE, streamptr->getNext()->getData());
+    auto variableNode = nvyc::ParserUtils::defineVariable(name);
+
+    streamptr = streamptr->forward(nvyc::ParserUtils::VARDEF_FORWARD_EXPR);
+    auto expression = parseExpression(*getExpression(*streamptr, nvyc::ParserUtils::LOCAL_EXPRESSION));
+
+    nvyc::ParserUtils::setVariableValue(*variableNode, std::move(expression));
+
+    return variableNode;
 }
 
 
@@ -73,16 +96,10 @@ NodeStream* nvyc::Parser::getExpression(const NodeStream& stream, bool enclosed)
     if(!enclosed) {
 
         // While there is a next node and it isn't a start symbol
-        while(copy->getNext() && !(nvyc::symbols::START_SYMBOLS.count(copy->getType()) || copy->getType() == NodeType::ENDOFLINE)) {
+        while(copy->getNext() && !nvyc::symbols::START_SYMBOLS.count(copy->getType())) {
             copy = copy->getNext();
         }
         copy = copy->getPrev();
-
-        // Temporary, debugging
-        if(nvyc::symbols::START_SYMBOLS.count(copy->getType())) {
-            std::cout << "Missing semicolon" << std::endl;
-            std::exit(1);
-        }
 
         copy->cutTail();
     }
@@ -223,4 +240,44 @@ void nvyc::Parser::processOperator(std::stack<NodeType>& operatorStack, std::sta
     }
 }
 
+std::vector<std::unique_ptr<NASTNode>> nvyc::Parser::parseBodyNodes(NodeStream& stream) {
+    NodeType type;
+    NodeStream* streamptr = &stream;
+    std::vector<std::unique_ptr<NASTNode>> bodyNodes;
+    std::stack<int> braces;
+    int forwardDepth;
+    
+    braces.push(1);
 
+    while(!braces.empty()) {
+        type = streamptr->getType();
+
+        switch(type) {
+            case NodeType::OPENBRACE:
+                braces.push(1);
+                break;
+            case NodeType::CLOSEBRACE:
+                braces.pop();
+                break;
+            case NodeType::ENDOFLINE:
+                streamptr = streamptr->getNext();
+                break;
+            default:
+                type = streamptr->getType();
+                auto node = parse(*streamptr);
+                bodyNodes.push_back(std::move(node));
+
+                if(type == NodeType::FORLOOP) {
+                    streamptr = streamptr->forwardType(NodeType::OPENBRACE)->getNext();
+                    forwardDepth = nvyc::ParserUtils::getDepth(*streamptr, NodeType::OPENBRACE, NodeType::CLOSEBRACE) + 1;
+                    streamptr = streamptr->forward(forwardDepth);
+                }
+                
+                else if(type != NodeType::IF) streamptr = streamptr->forwardType(NodeType::ENDOFLINE);
+                else braces.pop();
+                break;
+        }
+    }
+
+    return bodyNodes;
+}

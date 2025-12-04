@@ -6,6 +6,7 @@
 #include <string>
 #include <variant>
 #include <memory>
+#include <stack>
 
 using nvyc::NASTNode;
 using nvyc::NodeType;
@@ -24,13 +25,20 @@ namespace nvyc::ParserUtils {
         int bodyIndex = 0;
 
         switch(type) {
-            case NodeType::FUNCTION: bodyIndex = FUNCTION_BODY;
-            case NodeType::IF: bodyIndex = CONDITIONAL_BODY;
-            case NodeType::FORLOOP: bodyIndex = FORLOOP_BODY;
+            case NodeType::FUNCTION: 
+                bodyIndex = FUNCTION_BODY;
+                break;
+            case NodeType::IF: 
+                bodyIndex = CONDITIONAL_BODY;
+                break;
+            case NodeType::FORLOOP: 
+                bodyIndex = FORLOOP_BODY;
+                break;
             default: 
                 // Runtime errors on windows just show the "Not responding" box so print to console
                 std::cout << "Unknown branch: " << nvyc::symbols::nodeTypeToString(type) << std::endl;
                 throw std::runtime_error("Unknown branch: " + nvyc::symbols::nodeTypeToString(type));
+                break;
         }
 
         node.getSubnode(bodyIndex)->addSubnode(std::move(bodyNode));
@@ -242,5 +250,28 @@ namespace nvyc::ParserUtils {
     }
 
 
+    int getDepth(NodeStream& stream, NodeType open, NodeType close) {
+        std::stack<int> braces;
+        NodeType type;
+        NodeStream* streamptr = &stream;
+        streamptr = streamptr->getNext()->getNext();
+        int depth = 2;
+
+        braces.push(1);
+
+        while(!braces.empty()) {
+            type = streamptr->getType();
+            
+            if(type == open) braces.push(1);
+            else if(type == close) braces.pop();
+
+            if(streamptr->getNext() && !braces.empty()) {
+                streamptr = streamptr->getNext();
+                depth++;
+            }
+        }
+
+        return depth;
+    }
 
 } // namespace nvyc

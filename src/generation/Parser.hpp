@@ -36,6 +36,7 @@ namespace nvyc {
             // Utility
             void resolveDoubleTokens(NodeStream& stream);
             std::vector<NodeStream*> parselist(NodeStream& root);
+            std::vector<std::unique_ptr<NASTNode>> parseBodyNodes(NodeStream& stream);
 
         public:
             std::unique_ptr<NASTNode> parse(NodeStream& stream);

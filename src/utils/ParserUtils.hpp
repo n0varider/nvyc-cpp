@@ -21,6 +21,7 @@ namespace nvyc::ParserUtils {
     static constexpr int FUNCTION_FORWARD_FIRSTARG = 2;
     static constexpr int FUNCTION_FORWARD_NEXTARG = 2;
     static constexpr int FUNCTION_FORWARD_RETURNTYPE = 3;
+    static constexpr int FUNCTION_FORWARD_FIRSTEXPR = 2;
     static constexpr int VARDEF_FORWARD_EXPR = 3;
     static constexpr int STRUCT_FORWARD_NEXTARG = 3;
 
@@ -44,6 +45,7 @@ namespace nvyc::ParserUtils {
     }
 
     void addBodyNode(NASTNode& node, std::unique_ptr<NASTNode> bodyNode);
+    int getDepth(NodeStream&, NodeType open, NodeType close);
 
     // Functions
     std::unique_ptr<NASTNode> createFunction(const std::string& name);
