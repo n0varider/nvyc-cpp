@@ -1,11 +1,11 @@
 #pragma once
 
+#include "data/NodeStream.hpp"
+#include "data/NodeType.hpp"
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include "data/NodeStream.hpp"
-#include "data/NodeType.hpp"
 
 using nvyc::NodeStream;
 using nvyc::NodeType;

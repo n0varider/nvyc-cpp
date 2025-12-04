@@ -5,6 +5,7 @@
 #include "data/NodeType.hpp"
 #include <stack>
 #include <vector>
+#include <memory>
 
 using nvyc::NASTNode;
 using nvyc::NodeStream;
@@ -28,9 +29,9 @@ namespace nvyc {
             std::unique_ptr<NASTNode> parseAssign(NodeStream& stream);
             std::unique_ptr<NASTNode> parseVardef(NodeStream& stream);
             std::unique_ptr<NASTNode> parseReturn(NodeStream& stream);
-            NodeStream* getExpression(const NodeStream& stream);
+            NodeStream* getExpression(const NodeStream& stream, bool enclosed);
             std::unique_ptr<NASTNode> parseExpression(NodeStream& stream);
-            void processOperator(std::stack<NodeType>& operatorStack, std::stack<NASTNode*>& valueStack);
+            void processOperator(std::stack<NodeType>& operatorStack, std::stack<std::unique_ptr<NASTNode>>& valueStack);
 
             // Utility
             void resolveDoubleTokens(NodeStream& stream);

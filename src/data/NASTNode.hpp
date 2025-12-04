@@ -63,7 +63,7 @@ namespace nvyc {
             std::string asStringHelper(std::string prefix, std::string child) {
                     std::ostringstream oss;
                     oss << prefix;
-                    oss << "Node(" << nodeTypeToString(type) << ", " << getStringValue(type, dptr) << ")\n";
+                    oss << "Node(" << nvyc::symbols::nodeTypeToString(type) << ", " << nvyc::symbols::getStringValue(type, dptr) << ")\n";
                     if(!subnodes.empty()) {
                             for(const auto& subnode: subnodes) {
                                 if(subnode) 

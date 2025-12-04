@@ -1,10 +1,113 @@
 #pragma once
 
+#include "NodeType.hpp"
 #include <string>
 #include <cstdint>
-#include "NodeType.hpp"
+#include <unordered_set>
 
-namespace nvyc {
+namespace nvyc::symbols {
+
+    inline const std::unordered_set<NodeType> TYPE_SYMBOLS = {
+        NodeType::INT32_T, NodeType::INT64_T,
+        NodeType::FP32_T, NodeType::FP64_T,
+        NodeType::STR_T, NodeType::CHAR_T,
+        NodeType::VOID_T, NodeType::BOOL_T,
+        NodeType::TYPE_T, NodeType::FUNCTION_T
+    };
+
+    inline const std::unordered_set<NodeType> START_SYMBOLS = {
+        NodeType::VARDEF, NodeType::FUNCTION, NodeType::IF,
+        NodeType::ELSE, NodeType::FORLOOP, NodeType::WHILELOOP,
+        NodeType::NATIVE, NodeType::PUBLIC, NodeType::PRIVATE,
+        NodeType::FINAL, NodeType::CONSTANT, NodeType::STRUCT
+    };
+
+    inline const std::unordered_set<NodeType> LITERAL_SYMBOLS = {
+        NodeType::INT32, NodeType::INT64, NodeType::FP32,
+        NodeType::FP64, NodeType::STR, NodeType::CHAR,
+        NodeType::SHORT
+    };
+
+    inline const std::unordered_set<NodeType> UNARY_SYMBOLS = {
+        NodeType::SWITCHSIGN, NodeType::PTRDEREF, NodeType::FINDADDRESS
+    };
+
+    inline const std::unordered_set<NodeType> MEMORY_SYMBOLS = {
+        NodeType::FINDADDRESS, NodeType::PTRDEREF, NodeType::VARIABLE
+    };
+
+    inline const std::unordered_set<NodeType> ARITH_SYMBOLS = {
+        NodeType::ADD, NodeType::SUB, NodeType::MUL,
+        NodeType::DIV, NodeType::MODULO
+    };
+
+    inline const std::unordered_set<NodeType> BITWISE_SYMBOLS = {
+        NodeType::BITAND, NodeType::BITOR, NodeType::BITXOR,
+        NodeType::ARITHLEFTSHIFT, NodeType::ARITHRIGHTSHIFT,
+        NodeType::LOGICRIGHTSHIFT
+    };
+
+    inline const std::unordered_set<NodeType> LOGIC_SYMBOLS = {
+        NodeType::LOGICAND, NodeType::LOGICOR, NodeType::LOGICXOR,
+        NodeType::LT, NodeType::LTE, NodeType::GT,
+        NodeType::GTE, NodeType::EQ, NodeType::NEQ,
+        NodeType::NOT
+    };
+
+    inline const std::unordered_set<NodeType> MEMORY_CANDIDATE_SYMBOLS = {
+        NodeType::MUL, NodeType::BITAND
+    };
+
+    inline const std::unordered_set<NodeType> PREFIX_OPERATORS = {
+        NodeType::MUL, NodeType::BITAND, NodeType::SUB, NodeType::NOT
+    };
+
+    inline bool isArithmetic(NodeType type) {
+        return ARITH_SYMBOLS.count(type);
+    }
+
+    inline bool isLogical(NodeType type) {
+        return LOGIC_SYMBOLS.count(type);
+    }
+
+    inline bool isLiteral(NodeType type) {
+        return LITERAL_SYMBOLS.count(type);
+    }
+    
+    inline bool isOperator(NodeType type) {
+        return isArithmetic(type) || isLogical(type) || BITWISE_SYMBOLS.count(type);
+    }
+
+    inline bool isPrefixOperator(NodeType type) {
+        return PREFIX_OPERATORS.count(type);
+    }
+
+    inline NodeType mapUnaryOperator(NodeType type) {
+        NodeType mapped;
+
+        switch(type) {
+            case NodeType::MUL: 
+                mapped = NodeType::PTRDEREF;
+                break;
+            case NodeType::BITAND:
+                mapped = NodeType::FINDADDRESS;
+                break;
+            case NodeType::SUB:
+                mapped = NodeType::SWITCHSIGN;
+                break;
+            case NodeType::BITNEGATE:
+                mapped = NodeType::BITNEGATE;
+                break;
+            default:
+                mapped = NodeType::INVALID;
+                break;
+        }
+
+        return mapped;
+    }
+
+
+
 
 // Not sure this is optimal
 inline std::string nodeTypeToString(NodeType t) {
@@ -209,4 +312,47 @@ inline std::string nodeTypeToString(NodeType t) {
             }
         }
     }
+
+
+    inline int operatorPrecedence(NodeType op) {
+        switch(op) {
+            case NodeType::LOGICOR:     return 3;
+            case NodeType::LOGICAND:    return 4;
+            case NodeType::BITOR:       return 5;
+            case NodeType::BITXOR:      return 6;
+            case NodeType::BITAND:      return 7;
+
+            case NodeType::EQ:
+            case NodeType::NEQ:
+                return 8;
+
+            case NodeType::LT:
+            case NodeType::LTE:
+            case NodeType::GT:
+            case NodeType::GTE:
+                return 9;
+
+            case NodeType::ARITHLEFTSHIFT:
+            case NodeType::ARITHRIGHTSHIFT:
+            case NodeType::LOGICRIGHTSHIFT:
+                return 10;
+            
+            case NodeType::ADD:
+            case NodeType::SUB:
+                return 11;
+
+            case NodeType::MUL:
+            case NodeType::DIV:
+            case NodeType::MODULO:
+                return 12;
+
+            case NodeType::BITNEGATE:
+            case NodeType::NOT:
+                return 13;
+
+            case NodeType::ATTRIB:      return 14;
+            default:                    return 0;
+        }
+    }
+
 } // namespace nvyc::data

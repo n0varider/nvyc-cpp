@@ -158,9 +158,57 @@ public:
 		return this;
 	}
 
+	// Creates copy from current node onward
+	NodeStream* forwardCopy() const {
+		NodeStream* head = const_cast<NodeStream*>(this);
+
+		NodeStream* copy = new NodeStream(head->getType(), head->getData());
+		while((head = head->getNext())) {
+			copy->setNext(new NodeStream(head->getType(), head->getData()));
+			copy = copy->getNext();
+		}
+
+		return copy;
+	}
+
+	// Creates deep copy of stream and automatically moves to node it was copied at
+	NodeStream* deepCopy() const {
+		int dist = 0;
+
+		// Get distance to head
+		NodeStream* head = const_cast<NodeStream*>(this);
+		while(head->getPrev()) {
+			head = head->getPrev();
+			dist++;
+		}
+
+
+		NodeStream* copy = new NodeStream(head->getType(), head->getData());
+		while((head = head->getNext())) {
+			copy->setNext(new NodeStream(head->getType(), head->getData()));
+			copy = copy->getNext();
+		}
+
+		copy = copy->forward(dist);
+		return copy;
+	}
+
+	int length() const {
+		NodeStream* head = const_cast<NodeStream*>(this);
+		head = head->backtrack();
+		
+		int length = 0;
+		while(head) {
+			length++;
+			head = head->getNext();
+		}
+
+		return length;
+	}
+
 	std::string asString() {
 		std::ostringstream oss;
-		oss << "NodeStream(" << nodeTypeToString(type) << ", " << getStringValue(type, dptr) << ")";
+		oss << "NodeStream(" << nvyc::symbols::nodeTypeToString(type) << ", " << nvyc::symbols::getStringValue(type, dptr) << ")";
 		return oss.str();
 	}
 }; // NodeStream

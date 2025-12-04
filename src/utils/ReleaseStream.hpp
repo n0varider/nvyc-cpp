@@ -1,7 +1,7 @@
 #pragma once
 #include "data/NodeType.hpp"
 
-using nvyc::data::NodeType;
+using nvyc::NodeType;
 
 struct DeleteStream {
     NodeType type;

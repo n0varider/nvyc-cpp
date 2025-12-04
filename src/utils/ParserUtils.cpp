@@ -29,8 +29,8 @@ namespace nvyc::ParserUtils {
             case NodeType::FORLOOP: bodyIndex = FORLOOP_BODY;
             default: 
                 // Runtime errors on windows just show the "Not responding" box so print to console
-                std::cout << "Unknown branch: " << nodeTypeToString(type) << std::endl;
-                throw std::runtime_error("Unknown branch: " + nodeTypeToString(type));
+                std::cout << "Unknown branch: " << nvyc::symbols::nodeTypeToString(type) << std::endl;
+                throw std::runtime_error("Unknown branch: " + nvyc::symbols::nodeTypeToString(type));
         }
 
         node.getSubnode(bodyIndex)->addSubnode(std::move(bodyNode));
