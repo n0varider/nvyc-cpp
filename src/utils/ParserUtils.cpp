@@ -62,7 +62,8 @@ namespace nvyc::ParserUtils {
     }
 
     void setFunctionReturnType(NASTNode& function, NodeType type) {
-        function.setType(type);
+        auto returnNode = createNode(type, nullptr);
+        function.getSubnode(FUNCTION_RETURN)->addSubnode(std::move(returnNode));
     }
 
 
@@ -193,6 +194,8 @@ namespace nvyc::ParserUtils {
         loopHead->addSubnode(std::move(loopCondition));
         loopHead->addSubnode(std::move(loopIteration));
         loopHead->addSubnode(std::move(loopBody));
+
+        return loopHead;
     }
 
     void setLoopDefinition(NASTNode& loop, std::unique_ptr<NASTNode> definition) {

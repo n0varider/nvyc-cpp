@@ -37,15 +37,9 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
     std::string functionName = nvyc::symbols::getStringValue(NodeType::STR, streamptr->getData());
 
     streamptr = streamptr->forward(nvyc::ParserUtils::FUNCTION_FORWARD_FIRSTARG); 
+    auto functionNode = nvyc::ParserUtils::createFunction(functionName);
 
-    auto functionNode = nvyc::ParserUtils::createNode(NodeType::FUNCTION, new std::string(functionName));
-
-    std::cout << functionNode->asString() << std::endl;
-
-    auto functionParams = nvyc::ParserUtils::createNode(NodeType::FUNCTIONPARAM, nullptr);
-    auto functionReturn = nvyc::ParserUtils::createNode(NodeType::FUNCTIONRETURN, nullptr);
-    auto functionBody = nvyc::ParserUtils::createNode(NodeType::FUNCTIONBODY, nullptr);
-
+    nvyc::ParserUtils::createFunction(functionName);
     // Loop until every function parameter is parsed
     while(streamptr->getType() != NodeType::CLOSEPARENS) {
         NodeType varType = streamptr->getType();
@@ -53,7 +47,7 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
         std::string varName = nvyc::symbols::getStringValue(NodeType::STR, varNamePtr);
         auto variableNode = nvyc::ParserUtils::createNode(NodeType::VARIABLE, new std::string(varName));
 
-        functionParams->addSubnode(std::move(variableNode));
+        nvyc::ParserUtils::addFunctionArg(*functionNode, std::move(variableNode));
     
         streamptr = streamptr->forward(nvyc::ParserUtils::FUNCTION_FORWARD_NEXTARG);
         if(streamptr->getType() == NodeType::COMMADELIMIT) streamptr = streamptr->getNext();
@@ -61,16 +55,15 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
 
     streamptr = streamptr->forward(3); // Point at return type
 
-    auto returnType = nvyc::ParserUtils::createNode(streamptr->getType(), nullptr);
-    functionReturn->addSubnode(std::move(returnType));
-
-    functionNode->addSubnode(std::move(functionParams));
-    functionNode->addSubnode(std::move(functionReturn));
-    functionNode->addSubnode(std::move(functionBody));
+    auto returnType = streamptr->getType();
+    nvyc::ParserUtils::setFunctionReturnType(*functionNode, returnType);
 
     return functionNode;
 }
 
+
+// Get expression from a line
+// let x = 12 + f(); -> "12 + f()"
 NodeStream* nvyc::Parser::getExpression(const NodeStream& stream, bool enclosed) {
     NodeStream* copy = stream.forwardCopy();
     NodeType delimiter = enclosed ? NodeType::OPENPARENS : NodeType::ENDOFLINE;
@@ -97,6 +90,8 @@ NodeStream* nvyc::Parser::getExpression(const NodeStream& stream, bool enclosed)
     return copy->backtrack();
 }
 
+
+// Walk through expression and parse each part
 std::unique_ptr<NASTNode> nvyc::Parser::parseExpression(NodeStream& stream) {
     std::stack<std::unique_ptr<NASTNode>> valueStack;
     std::stack<NodeType> operatorStack;
@@ -187,6 +182,18 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseExpression(NodeStream& stream) {
     return std::move(valueStack.top());
 }
 
+/*
+
+    Walk through operator and value stack and combine into a single tree
+
+    [+], [1, 2] folds into 
+    NODE(ADD, VOID)
+    -- NODE(INT32, 1)
+    -- NODE(INT32, 2) 
+
+    which gets pushed onto the value stack as another operand
+
+*/
 void nvyc::Parser::processOperator(std::stack<NodeType>& operatorStack, std::stack<std::unique_ptr<NASTNode>>& valueStack) {
     NodeType operation = operatorStack.top();
 
