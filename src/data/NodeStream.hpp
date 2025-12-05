@@ -2,6 +2,7 @@
 
 #include "NodeType.hpp"
 #include "Symbols.hpp"
+#include "Value.hpp"
 #include <cstdint>
 #include <functional>
 #include <stdexcept>
@@ -12,7 +13,8 @@ namespace nvyc {
 
 class NodeStream {
 private:
-	void* dptr = nullptr;
+	Value dptr;
+	//void* dptr = nullptr;
 	NodeType type = NodeType::INVALID;
 	bool owned = true;
 	NodeStream* next = nullptr;
@@ -23,27 +25,31 @@ public:
 	static constexpr int CUT_FORWARD = 1;
 	static constexpr int CUT_BACKWARD = -1;
 
-	NodeStream() = default;
-	NodeStream(NodeType type, void* ptr, bool owned = true)
-	: dptr(ptr), type(type), owned(owned) {}
+	//NodeStream(NodeType type, void* ptr, bool owned = true)
+	//: dptr(ptr), type(type), owned(owned) {}
 
-	~NodeStream() {
-		free();
-	}
+	NodeStream(NodeType type, Value v, bool owned = true)
+	: dptr(v), type(type), owned(owned) {}
+
+	~NodeStream() = default;
 
 	// NOT SAFE
 	// Cannot call delete on void*
 	// use delete static_cast<T*>(dptr)
 	// where T* is based on the NodeType
-	void free() {
+	/*void free() {
 		if(!owned || !dptr) return;
 		// delete dptr;
 		dptr  = nullptr;
 		owned = false;
-	}
+	}*/
 
 	// Get data
-	void* getData() const {
+	/*void* getData() const {
+		return dptr;
+	}*/
+
+	Value getData() const {
 		return dptr;
 	}
 
@@ -84,7 +90,7 @@ public:
 			else if(direction == CUT_BACKWARD) tmp = current->prev;
 			else throw std::runtime_error("<cut> direction must be 1 or -1");
 
-			current->free();
+			//current->free();
 			delete current;
 			current = tmp;
 		}
@@ -124,7 +130,6 @@ public:
 		prev = nullptr;
 		next = nullptr;
 
-		free();
 		delete this;
 	}
 
@@ -208,7 +213,8 @@ public:
 
 	std::string asString() {
 		std::ostringstream oss;
-		oss << "NodeStream(" << nvyc::symbols::nodeTypeToString(type) << ", " << nvyc::symbols::getStringValue(type, dptr) << ")";
+		//oss << "NodeStream(" << nvyc::symbols::nodeTypeToString(type) << ", " << nvyc::symbols::getStringValue(type, dptr) << ")";
+		oss << "NodeStream(" << nvyc::symbols::nodeTypeToString(type) << ", " << dptr.asString() << ")";
 		return oss.str();
 	}
 }; // NodeStream

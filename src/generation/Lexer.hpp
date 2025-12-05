@@ -2,6 +2,7 @@
 
 #include "data/NodeStream.hpp"
 #include "data/NodeType.hpp"
+#include "data/Value.hpp"
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -20,6 +21,7 @@ namespace nvyc {
             static const std::unordered_set<NodeType> NUMERICS;
         
         public:
+            const Value NULL_VALUE = Value(NodeType::VOID);
             std::unordered_map<std::string, NodeType> rep;
             static Lexer& getInstance();
             NodeStream* lex(const std::vector<std::string>& lines);

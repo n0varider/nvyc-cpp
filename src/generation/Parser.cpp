@@ -1,6 +1,7 @@
 #include "Parser.hpp"
 #include "utils/ParserUtils.hpp"
 #include "data/Symbols.hpp"
+#include "data/Value.hpp"
 #include <iostream>
 #include <memory>
 #include <stack>
@@ -35,7 +36,7 @@ std::unique_ptr<NASTNode> nvyc::Parser::parse(NodeStream& stream) {
 // func add(int32 a, int32 b) -> int32 { ... }
 std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
     NodeStream* streamptr = stream.forward(nvyc::ParserUtils::FUNCTION_FORWARD_NAME); // Move to name
-    std::string functionName = nvyc::symbols::getStringValue(NodeType::STR, streamptr->getData());
+    std::string functionName = streamptr->getData().asString(); //nvyc::symbols::getStringValue(NodeType::STR, streamptr->getData());
 
     streamptr = streamptr->forward(nvyc::ParserUtils::FUNCTION_FORWARD_FIRSTARG); 
     auto functionNode = nvyc::ParserUtils::createFunction(functionName);
@@ -43,9 +44,10 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
     // Loop until every function parameter is parsed
     while(streamptr->getType() != NodeType::CLOSEPARENS) {
         NodeType varType = streamptr->getType();
-        void* varNamePtr = streamptr->getNext()->getData();
-        std::string varName = nvyc::symbols::getStringValue(NodeType::STR, varNamePtr);
-        auto variableNode = nvyc::ParserUtils::createNode(NodeType::VARIABLE, new std::string(varName));
+        //void* varNamePtr = streamptr->getNext()->getData();
+        //std::string varName = nvyc::symbols::getStringValue(NodeType::STR, varNamePtr);
+        std::string varName = streamptr->getNext()->getData().asString();
+        auto variableNode = nvyc::ParserUtils::createNode(NodeType::VARIABLE, Value(varName));
 
         nvyc::ParserUtils::addFunctionArg(*functionNode, std::move(variableNode));
     
@@ -73,7 +75,7 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
 
 std::unique_ptr<NASTNode> nvyc::Parser::parseVardef(NodeStream& stream) {
     NodeStream* streamptr = &stream;
-    std::string name = nvyc::symbols::getStringValue(NodeType::VARIABLE, streamptr->getNext()->getData());
+    std::string name = streamptr->getNext()->getData().asString(); //nvyc::symbols::getStringValue(NodeType::VARIABLE, streamptr->getNext()->getData());
     auto variableNode = nvyc::ParserUtils::defineVariable(name);
 
     streamptr = streamptr->forward(nvyc::ParserUtils::VARDEF_FORWARD_EXPR);
@@ -123,9 +125,10 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseExpression(NodeStream& stream) {
         // Member access, checks if type is variable and if it has a member (x.member)
         if(
             tokenType == NodeType::VARIABLE 
-            && nvyc::symbols::getStringValue(NodeType::VARIABLE, streamptr->getData()).find('.') != std::string::npos
+            //&& nvyc::symbols::getStringValue(NodeType::VARIABLE, streamptr->getData()).find('.') != std::string::npos
+            && streamptr->getData().asString().find('.') != std::string::npos
         ) {
-            valueStack.push(nvyc::ParserUtils::accessStructMember(nvyc::symbols::getStringValue(NodeType::VARIABLE, streamptr->getData())));
+            valueStack.push(nvyc::ParserUtils::accessStructMember(streamptr->getData().asString()));//nvyc::symbols::getStringValue(NodeType::VARIABLE, streamptr->getData())));
             expectUnary = false;
         }
 
@@ -217,7 +220,7 @@ void nvyc::Parser::processOperator(std::stack<NodeType>& operatorStack, std::sta
     // If the current operator is unary
     if(nvyc::symbols::UNARY_SYMBOLS.count(operation)) {
         auto rhs = std::move(valueStack.top()); valueStack.pop();
-        auto node = nvyc::ParserUtils::createNode(operation, nullptr);
+        auto node = nvyc::ParserUtils::createNode(operation, Value("VOID"));
         node->addSubnode(std::move(rhs));
         valueStack.push(std::move(node));
     }
@@ -233,7 +236,7 @@ void nvyc::Parser::processOperator(std::stack<NodeType>& operatorStack, std::sta
 
         auto rhs = std::move(valueStack.top()); valueStack.pop();
         auto lhs = std::move(valueStack.top()); valueStack.pop();
-        auto node = nvyc::ParserUtils::createNode(operation, nullptr);
+        auto node = nvyc::ParserUtils::createNode(operation, Value("VOID"));
         node->addSubnode(std::move(lhs));
         node->addSubnode(std::move(rhs));
         valueStack.push(std::move(node));

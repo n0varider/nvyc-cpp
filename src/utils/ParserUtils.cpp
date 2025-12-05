@@ -49,10 +49,10 @@ namespace nvyc::ParserUtils {
     // -                FUNCTIONS                   -
     // ----------------------------------------------
     std::unique_ptr<NASTNode> createFunction(const std::string& name) {
-        auto root = createNode(NodeType::FUNCTION, new std::string(name));
-        auto functionArgs = createNode(NodeType::FUNCTIONPARAM, nullptr);
-        auto functionReturn = createNode(NodeType::FUNCTIONRETURN, nullptr);
-        auto functionBody = createNode(NodeType::FUNCTIONBODY, nullptr);
+        auto root = createNode(NodeType::FUNCTION, Value(name));
+        auto functionArgs = createNode(NodeType::FUNCTIONPARAM, NULL_VALUE);
+        auto functionReturn = createNode(NodeType::FUNCTIONRETURN, NULL_VALUE);
+        auto functionBody = createNode(NodeType::FUNCTIONBODY, NULL_VALUE);
         
         root->addSubnode(std::move(functionArgs));
         root->addSubnode(std::move(functionReturn));
@@ -70,7 +70,7 @@ namespace nvyc::ParserUtils {
     }
 
     void setFunctionReturnType(NASTNode& function, NodeType type) {
-        auto returnNode = createNode(type, nullptr);
+        auto returnNode = createNode(type, NULL_VALUE);
         function.getSubnode(FUNCTION_RETURN)->addSubnode(std::move(returnNode));
     }
 
@@ -81,10 +81,10 @@ namespace nvyc::ParserUtils {
     // ----------------------------------------------
 
     std::unique_ptr<NASTNode> createConditional() {
-        auto conditionalHead = createNode(NodeType::IF, nullptr);
-        auto conditionalCondition = createNode(NodeType::CONDITION, nullptr);
-        auto conditionalBody = createNode(NodeType::FUNCTIONBODY, nullptr);
-        auto conditionalElse = createNode(NodeType::ELSE, nullptr);
+        auto conditionalHead = createNode(NodeType::IF, NULL_VALUE);
+        auto conditionalCondition = createNode(NodeType::CONDITION, NULL_VALUE);
+        auto conditionalBody = createNode(NodeType::FUNCTIONBODY, NULL_VALUE);
+        auto conditionalElse = createNode(NodeType::ELSE, NULL_VALUE);
 
         conditionalHead->addSubnode(std::move(conditionalCondition));
         conditionalHead->addSubnode(std::move(conditionalBody));
@@ -111,24 +111,24 @@ namespace nvyc::ParserUtils {
     // ----------------------------------------------
 
     std::unique_ptr<NASTNode> defineVariable(const std::string& name) {
-        return createNode(NodeType::VARDEF, new std::string(name));
+        return createNode(NodeType::VARDEF, Value(name));
     }
 
     std::unique_ptr<NASTNode> createVariable(const std::string& name) {
-        return createNode(NodeType::VARIABLE, new std::string(name));
+        return createNode(NodeType::VARIABLE, Value(name));
     }
 
     void setVariableValue(NASTNode& variable, std::unique_ptr<NASTNode> value) {
         addBodyNode(variable, std::move(value));
     }
     void castVariable(NASTNode& variable, NodeType cast) {
-        auto castNode = createNode(NodeType::CAST, new NodeType(cast));
+        auto castNode = createNode(NodeType::CAST, Value(cast));
         addBodyNode(variable, std::move(castNode));
     }
 
     void castVariableToStruct(NASTNode& variable,  std::string& structName) {
-        auto castNode = createNode(NodeType::CAST, new NodeType(NodeType::STRUCT));
-        auto structType = createNode(NodeType::STRUCT, new std::string(structName));
+        auto castNode = createNode(NodeType::CAST, Value(NodeType::STRUCT));
+        auto structType = createNode(NodeType::STRUCT, Value(structName));
         
         castNode->addSubnode(std::move(structType));
         addBodyNode(variable, std::move(castNode));
@@ -141,7 +141,7 @@ namespace nvyc::ParserUtils {
     // ----------------------------------------------
 
     std::unique_ptr<NASTNode> createReturn(std::unique_ptr<NASTNode> value) {
-        auto returnNode = createNode(NodeType::RETURN, nullptr);
+        auto returnNode = createNode(NodeType::RETURN, NULL_VALUE);
         
         returnNode->addSubnode(std::move(value));
 
@@ -154,7 +154,7 @@ namespace nvyc::ParserUtils {
     // ----------------------------------------------
 
     std::unique_ptr<NASTNode> createStruct(const std::string& name) {
-        return createNode(NodeType::STRUCT, new std::string(name));
+        return createNode(NodeType::STRUCT, Value(name));
     }
 
     void addStructNode(NASTNode& structNode,  std::unique_ptr<NASTNode> member) {
@@ -175,11 +175,11 @@ namespace nvyc::ParserUtils {
         if(elems.empty()) return nullptr; // Should ideally error if this ever happens
 
         // Get full member depth (x.y.z)
-        auto root = createNode(NodeType::VARIABLE, new std::string(elems[0]));
+        auto root = createNode(NodeType::VARIABLE, Value(elems[0]));
         NASTNode* current = root.get();
 
         for(int i = 1; i < elems.size(); i++) {
-            auto memberNode = createNode(NodeType::MEMBER, new std::string(elems[i]));
+            auto memberNode = createNode(NodeType::MEMBER, Value(elems[i]));
             current->addSubnode(std::move(memberNode));
             current = current->getSubnode(0);
         }
@@ -192,11 +192,11 @@ namespace nvyc::ParserUtils {
     // ----------------------------------------------
 
     std::unique_ptr<NASTNode> createForLoop() {
-        auto loopHead = createNode(NodeType::FORLOOP, nullptr);
-        auto loopDefinition = createNode(NodeType::LOOPDEF, nullptr);
-        auto loopCondition = createNode(NodeType::LOOPCOND, nullptr);
-        auto loopIteration = createNode(NodeType::LOOPITERATION, nullptr);
-        auto loopBody = createNode(NodeType::FUNCTIONBODY, nullptr);
+        auto loopHead = createNode(NodeType::FORLOOP, Value("VOID"));
+        auto loopDefinition = createNode(NodeType::LOOPDEF, NULL_VALUE);
+        auto loopCondition = createNode(NodeType::LOOPCOND, NULL_VALUE);
+        auto loopIteration = createNode(NodeType::LOOPITERATION, NULL_VALUE);
+        auto loopBody = createNode(NodeType::FUNCTIONBODY, NULL_VALUE);
 
         loopHead->addSubnode(std::move(loopDefinition));
         loopHead->addSubnode(std::move(loopCondition));
@@ -229,8 +229,8 @@ namespace nvyc::ParserUtils {
     // ----------------------------------------------
 
     std::unique_ptr<NASTNode> createArray(NodeType type, int size) {
-        auto arrayNode = createNode(NodeType::ARRAY, new NodeType(type));
-        auto arraySize = createNode(NodeType::ARRAY_SIZE, new int(size));
+        auto arrayNode = createNode(NodeType::ARRAY, Value(type));
+        auto arraySize = createNode(NodeType::ARRAY_SIZE, Value(size));
 
         arrayNode->addSubnode(std::move(arraySize));
 
@@ -239,12 +239,12 @@ namespace nvyc::ParserUtils {
     }
 
     std::unique_ptr<NASTNode> accessArray(const std::string& name, std::variant<int, std::string> index) {
-        auto accessNode = createNode(NodeType::ARRAY_ACCESS, nullptr);
-        auto arrayName = createNode(NodeType::ARRAY, new std::string(name));
-        auto arrayIndex = createNode(NodeType::ARRAY_INDEX, new std::variant<int, std::string>(index));
+        auto accessNode = createNode(NodeType::ARRAY_ACCESS, NULL_VALUE);
+        auto arrayName = createNode(NodeType::ARRAY, Value(name));
+        //auto arrayIndex = createNode(NodeType::ARRAY_INDEX, new std::variant<int, std::string>(index));
     
         accessNode->addSubnode(std::move(arrayName));
-        accessNode->addSubnode(std::move(arrayIndex));
+        //accessNode->addSubnode(std::move(arrayIndex));
 
         return accessNode;
     }

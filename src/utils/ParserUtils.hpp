@@ -3,6 +3,7 @@
 #include "data/NodeStream.hpp"
 #include "data/NASTNode.hpp"
 #include "data/NodeType.hpp"
+#include "data/Value.hpp"
 #include <string>
 #include <variant>
 #include <memory>
@@ -11,6 +12,8 @@ using nvyc::NASTNode;
 using nvyc::NodeType;
 
 namespace nvyc::ParserUtils {
+
+    inline const Value NULL_VALUE = Value(NodeType::VOID);
 
     // Expression constants
     static constexpr bool LOCAL_EXPRESSION = false;
@@ -40,7 +43,7 @@ namespace nvyc::ParserUtils {
     static constexpr int FORLOOP_BODY = 3;
 
     // Generic
-    inline static std::unique_ptr<NASTNode> createNode(NodeType type, void* value) {
+    inline static std::unique_ptr<NASTNode> createNode(NodeType type, Value value) {
         return std::make_unique<NASTNode>(type, value);
     }
 

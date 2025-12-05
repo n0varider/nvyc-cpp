@@ -14,20 +14,19 @@ namespace nvyc {
         private:
             std::vector<std::unique_ptr<NASTNode>> subnodes;
             NodeType type;
-            void* dptr; // Move to unique_ptr with custom ReleaseStream deletion function
+            //void* dptr; // Move to unique_ptr with custom ReleaseStream deletion function
+            Value dptr;
             bool owned;
 
         public:
-            NASTNode(NodeType t, void* p, bool owned = true) : dptr(p), type(t), owned(owned) {}
-            ~NASTNode() {
-                free();
-            }
+            NASTNode(NodeType t, Value p, bool owned = true) : dptr(p), type(t), owned(owned) {}
+            ~NASTNode() = default;
 
-            void free() {
+            /*void free() {
                 if(!owned || !dptr) return;
-            }
+            }*/
 
-            void* getData() const {
+            Value getData() const {
                 return dptr;
             }
 
@@ -63,7 +62,8 @@ namespace nvyc {
             std::string asStringHelper(std::string prefix, std::string child) {
                     std::ostringstream oss;
                     oss << prefix;
-                    oss << "Node(" << nvyc::symbols::nodeTypeToString(type) << ", " << nvyc::symbols::getStringValue(type, dptr) << ")\n";
+                    //oss << "Node(" << nvyc::symbols::nodeTypeToString(type) << ", " << nvyc::symbols::getStringValue(type, dptr) << ")\n";
+                    oss << "Node(" << nvyc::symbols::nodeTypeToString(type) << ", " << dptr.asString() << ")\n";
                     if(!subnodes.empty()) {
                             for(const auto& subnode: subnodes) {
                                 if(subnode) 

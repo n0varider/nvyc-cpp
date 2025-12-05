@@ -131,7 +131,7 @@ NodeType nvyc::Lexer::numericNativeType(const std::string& s) const {
 }
 
 NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
-    NodeStream* head = new NodeStream(NodeType::PROGRAM, nullptr);
+    NodeStream* head = new NodeStream(NodeType::PROGRAM, NULL_VALUE);
     NodeStream* sentinel = head;
     NodeStream* current;
 
@@ -164,7 +164,7 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
                     }
                     if (i < line.length() && line[i] == '"') value += '"';
                     i++;
-                    current = new NodeStream(NodeType::STR, new std::string(value));
+                    current = new NodeStream(NodeType::STR, Value(value));
                 }
 
                 // Single chars ('c')
@@ -179,12 +179,12 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
                         value += '\'';
                     }
                     i++;
-                    current = new NodeStream(NodeType::CHAR, new std::string(value));
+                    current = new NodeStream(NodeType::CHAR, Value(value));
                 }
 
                 // Otherwise, assign type
                 else {
-                    current = new NodeStream(type, new std::string(symbol));
+                    current = new NodeStream(type, Value(symbol));
                     i++;
                 }
 
@@ -216,7 +216,7 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
                     value.erase(std::remove(value.begin(), value.end(), '_'), value.end());
                     current = convertNumeric(type, value);
                 }else{
-                    current = new NodeStream(type, new std::string(value));
+                    current = new NodeStream(type, Value(value));
                 }
 
             
@@ -227,7 +227,7 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
             }
             
             // Unknown fallback
-            current = new NodeStream(NodeType::VARIABLE, new std::string(1, ch));
+            current = new NodeStream(NodeType::VARIABLE, Value(std::string(1, ch)));
             head->setNext(current);
             current->setPrev(head);
             head = head->getNext();
@@ -236,7 +236,7 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
         lineNumber++;
     }
 
-    current = new NodeStream(NodeType::ENDOFSTREAM, nullptr);
+    current = new NodeStream(NodeType::ENDOFSTREAM, NULL_VALUE);
     current->setPrev(head);
     head->setNext(current);
 
@@ -246,14 +246,14 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
 NodeStream* nvyc::Lexer::convertNumeric(NodeType type, const std::string& value) {
     switch(type) {
         case NodeType::INT32:
-            return new NodeStream(type, new int32_t(std::stoi(value)));
+            return new NodeStream(type, Value(std::stoi(value)));
         case NodeType::INT64:
-            return new NodeStream(type, new int64_t(std::stoll(value)));
+            return new NodeStream(type, Value(std::stoll(value)));
         case NodeType::FP32:
-            return new NodeStream(type, new float(std::stof(value)));
+            return new NodeStream(type, Value(std::stof(value)));
         case NodeType::FP64:
-            return new NodeStream(type, new double(std::stod(value)));
+            return new NodeStream(type, Value(std::stod(value)));
         default:
-            return new NodeStream(NodeType::VARIABLE, new std::string(value));
+            return new NodeStream(NodeType::VARIABLE, Value(value));
     }
 }
