@@ -118,6 +118,15 @@ namespace nvyc::ParserUtils {
         return createNode(NodeType::VARIABLE, Value(name));
     }
 
+    std::unique_ptr<NASTNode> assignVariable(std::unique_ptr<NASTNode> variable, std::unique_ptr<NASTNode> value) {
+        auto assignNode = createNode(NodeType::ASSIGN, NULL_VALUE);
+
+        assignNode->addSubnode(std::move(variable));
+        assignNode->addSubnode(std::move(value));
+
+        return std::move(assignNode);
+    }
+
     void setVariableValue(NASTNode& variable, std::unique_ptr<NASTNode> value) {
         addBodyNode(variable, std::move(value));
     }

@@ -25,6 +25,21 @@ std::unique_ptr<NASTNode> nvyc::Parser::parse(NodeStream& stream) {
         case NodeType::VARDEF:
             node = parseVardef(stream);
             break;
+        case NodeType::RETURN:
+            node = parseReturn(stream);
+            break;
+        case NodeType::VARIABLE:
+            if(stream.getNext() && stream.getNext()->getType() == NodeType::ASSIGN) {
+                std::cout << "Parsing assign\n";
+                node = parseAssign(stream);
+                std::cout << node->asString() << std::endl;
+            }
+            else{ 
+                // Work out Value semantics to avoid copying everywhere unless it's more efficient/safer
+                // than having a pointer everywhere
+                node = nvyc::ParserUtils::createNode(NodeType::VARIABLE, stream.getData());
+            }
+            break;
         default:
             node = nullptr;
             break;
@@ -293,3 +308,46 @@ std::vector<std::unique_ptr<NASTNode>> nvyc::Parser::parseBodyNodes(NodeStream& 
 
     return bodyNodes;
 }
+
+
+std::unique_ptr<NASTNode> nvyc::Parser::parseReturn(NodeStream& stream) {
+    auto returnValue = parseExpression(*getExpression(*stream.getNext(), nvyc::ParserUtils::LOCAL_EXPRESSION));
+    return nvyc::ParserUtils::createReturn(std::move(returnValue));
+}
+
+std::unique_ptr<NASTNode> nvyc::Parser::parseAssign(NodeStream& stream) {
+    std::string name = stream.getData().asString();
+    bool ptrderef = stream.getType() == NodeType::PTRDEREF;
+    bool arrayAccess = stream.getType() == NodeType::ARRAY_ACCESS;
+    std::unique_ptr<NASTNode> head;
+
+    // Requires tuple, may need to reformat
+    /*
+    if(arrayAccess) {
+        
+    }
+    */
+
+    if(ptrderef) {
+        head = nvyc::ParserUtils::createNode(NodeType::PTRDEREF, Value(name));
+    }
+
+    // Split member access
+    /*
+    else if(name.find('.') != std::string::npos) {
+
+    }
+    */
+
+    // Fallback
+    else {
+        head = nvyc::ParserUtils::createNode(NodeType::VARIABLE, Value(name));
+    }
+
+    auto streamptr = &stream;
+    streamptr = streamptr->forward(2);
+    auto value = parseExpression(*getExpression(*streamptr, nvyc::ParserUtils::LOCAL_EXPRESSION));
+
+    return nvyc::ParserUtils::assignVariable(std::move(head), std::move(value));
+}
+

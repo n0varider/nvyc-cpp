@@ -68,7 +68,7 @@ namespace nvyc::ParserUtils {
     // Variables
     std::unique_ptr<NASTNode> defineVariable(const std::string& name);
     std::unique_ptr<NASTNode> createVariable(const std::string& name);
-    // NASTNode* assignVariable(const std::string& name, const NASTNode& value);
+    std::unique_ptr<NASTNode> assignVariable(std::unique_ptr<NASTNode> variable, std::unique_ptr<NASTNode> value);
     void setVariableValue(NASTNode& variable, std::unique_ptr<NASTNode> value);
     void castVariable(NASTNode& variable, NodeType cast);
     void castVariableToStruct(NASTNode& variable,  std::string& structName);

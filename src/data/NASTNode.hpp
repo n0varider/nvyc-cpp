@@ -67,9 +67,9 @@ namespace nvyc {
                     if(!subnodes.empty()) {
                             for(const auto& subnode: subnodes) {
                                 if(subnode) 
-                                    oss << subnode->asStringHelper(child + "        -- ", child + "         ");
+                                    oss << subnode->asStringHelper(child + "    -- ", child + "       ");
                                 else
-                                    oss << "Null node\n";
+                                    oss << prefix << "Null node\n";
                             }
                     }
                     return oss.str();
