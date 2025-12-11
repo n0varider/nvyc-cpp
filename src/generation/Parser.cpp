@@ -165,15 +165,16 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseExpression(NodeStream& stream) {
 
             if(expectUnary && nvyc::symbols::isPrefixOperator(tokenType)) {
                 actualOp = nvyc::symbols::mapUnaryOperator(tokenType);
-
-                while(
-                    !operatorStack.empty()
-                    && operatorStack.top() != NodeType::OPENPARENS
-                    && nvyc::symbols::operatorPrecedence(operatorStack.top()) >= nvyc::symbols::operatorPrecedence(actualOp)
-                ) {
-                    processOperator(operatorStack, valueStack);
-                }
             }
+
+            while(
+                !operatorStack.empty()
+                && operatorStack.top() != NodeType::OPENPARENS
+                && nvyc::symbols::operatorPrecedence(operatorStack.top()) >= nvyc::symbols::operatorPrecedence(actualOp)
+            ) {
+                processOperator(operatorStack, valueStack);
+            }
+            
 
             operatorStack.push(actualOp);
             expectUnary = true;
@@ -199,7 +200,9 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseExpression(NodeStream& stream) {
         processOperator(operatorStack, valueStack);
     }
 
-    return std::move(valueStack.top());
+    auto top = std::move(valueStack.top());
+    valueStack.pop();
+    return std::move(top);
 }
 
 /*
@@ -216,6 +219,7 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseExpression(NodeStream& stream) {
 */
 void nvyc::Parser::processOperator(std::stack<NodeType>& operatorStack, std::stack<std::unique_ptr<NASTNode>>& valueStack) {
     NodeType operation = operatorStack.top();
+    operatorStack.pop();
 
     // If the current operator is unary
     if(nvyc::symbols::UNARY_SYMBOLS.count(operation)) {
@@ -229,6 +233,11 @@ void nvyc::Parser::processOperator(std::stack<NodeType>& operatorStack, std::sta
     else {
         // Temporary, debug/testing
         if(valueStack.size() < 2) {
+            int siz = valueStack.size();
+            for(int i = 0; i < siz; i++) {
+                std::cout << valueStack.top()->asString() << std::endl;
+                valueStack.pop();
+            }
             std::string op = nvyc::symbols::nodeTypeToString(operation);
             std::cout << "Not enough values in stack for operation " << op << std::endl;
             std::exit(1);
