@@ -10,7 +10,7 @@ using nvyc::NASTNode;
 using nvyc::NodeStream;
 using nvyc::NodeType;
 
-int advance = 0;
+int forwardDepth = 0;
 bool isNativeFunction = false;
 
 std::unique_ptr<NASTNode> nvyc::Parser::parse(NodeStream& stream) {
@@ -28,11 +28,12 @@ std::unique_ptr<NASTNode> nvyc::Parser::parse(NodeStream& stream) {
         case NodeType::RETURN:
             node = parseReturn(stream);
             break;
+        case NodeType::FORLOOP:
+            node = parseForLoop(stream);
+            break;
         case NodeType::VARIABLE:
             if(stream.getNext() && stream.getNext()->getType() == NodeType::ASSIGN) {
-                std::cout << "Parsing assign\n";
                 node = parseAssign(stream);
-                std::cout << node->asString() << std::endl;
             }
             else{ 
                 // Work out Value semantics to avoid copying everywhere unless it's more efficient/safer
@@ -46,6 +47,10 @@ std::unique_ptr<NASTNode> nvyc::Parser::parse(NodeStream& stream) {
     }
     return node;
 }
+
+// **********************************************
+// *             Block Statements               *
+// **********************************************
 
 // Parses function declarations
 // func add(int32 a, int32 b) -> int32 { ... }
@@ -87,6 +92,92 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
 
     return functionNode;
 }
+
+std::unique_ptr<NASTNode> nvyc::Parser::parseForLoop(NodeStream& stream) {
+    auto loopNode = nvyc::ParserUtils::createForLoop();
+    auto copy = stream.forwardCopy();
+    NodeStream* body;
+    NodeStream* expression;
+
+    // for(let x = 0; x < 10; x + 1) { ... }
+
+    // ---- Definition    |      let x = 0
+    // Moves into parens from for(let x = 0; ...)
+    copy = copy->forwardType(NodeType::OPENPARENS)->getNext();
+    nvyc::ParserUtils::setLoopDefinition(*loopNode, parseVardef(*copy));
+
+    // ---- Condition     |      x < 10
+    // Moves from "let x = 0;" to "x < 10"
+    copy = copy->getNext()->forwardType(NodeType::ENDOFLINE)->getNext();
+    expression = getExpression(*copy, nvyc::ParserUtils::LOCAL_EXPRESSION);
+    nvyc::ParserUtils::setLoopCondition(*loopNode, parseExpression(*expression));
+
+    // ---- Iteration     |     x + 1
+    // Move from "x < 10;" to " x + 1"
+    copy = copy->getNext()->forwardType(NodeType::ENDOFLINE)->getNext();
+    copy->cutHead();
+    copy = copy->forwardType(NodeType::OPENBRACE)->backward(2);
+    body = copy->forwardCopy();
+    copy->cutTail();
+    expression = getExpression(*copy->backtrack(), nvyc::ParserUtils::ENCLOSED_EXPRESSION);
+    body = body->forward(3);
+
+    nvyc::ParserUtils::setLoopIteration(*loopNode, parseExpression(*expression));
+
+    std::vector<std::unique_ptr<NASTNode>> bodyNodes = parseBodyNodes(*body);
+    for(auto& subnode : bodyNodes) {
+        nvyc::ParserUtils::addLoopBody(*loopNode, std::move(subnode));
+    }
+
+    return loopNode;
+}
+
+
+std::vector<std::unique_ptr<NASTNode>> nvyc::Parser::parseBodyNodes(NodeStream& stream) {
+    NodeType type;
+    std::vector<std::unique_ptr<NASTNode>> bodyNodes;
+    std::stack<int> braces;
+    braces.push(1);
+    auto streamptr = &stream;
+
+    while(!braces.empty()) {
+        type = streamptr->getType();
+
+        switch(type) {
+            case NodeType::OPENBRACE:
+                braces.push(1);
+                break;
+            case NodeType::CLOSEBRACE:
+                braces.pop();
+                break;
+            case NodeType::ENDOFLINE:
+                streamptr = streamptr->getNext();
+                break;
+            default:
+                type = streamptr->getType();
+                auto node = parse(*streamptr);
+                bodyNodes.push_back(std::move(node));
+
+                if(type == NodeType::FORLOOP) {
+                    streamptr = streamptr->forwardType(NodeType::OPENBRACE)->getNext();
+                    forwardDepth = nvyc::ParserUtils::getDepth(*streamptr, NodeType::OPENBRACE, NodeType::CLOSEBRACE) + 1;
+                    streamptr = streamptr->forward(forwardDepth);
+                }
+                else if(type != NodeType::IF) streamptr = streamptr->forwardType(NodeType::ENDOFLINE);
+                else braces.pop();
+                break;
+        }
+    }
+
+    return bodyNodes;
+}
+
+
+
+
+// **********************************************
+// *                Expressions                 *
+// **********************************************
 
 std::unique_ptr<NASTNode> nvyc::Parser::parseVardef(NodeStream& stream) {
     NodeStream* streamptr = &stream;
@@ -265,48 +356,6 @@ void nvyc::Parser::processOperator(std::stack<NodeType>& operatorStack, std::sta
         node->addSubnode(std::move(rhs));
         valueStack.push(std::move(node));
     }
-}
-
-std::vector<std::unique_ptr<NASTNode>> nvyc::Parser::parseBodyNodes(NodeStream& stream) {
-    NodeType type;
-    NodeStream* streamptr = &stream;
-    std::vector<std::unique_ptr<NASTNode>> bodyNodes;
-    std::stack<int> braces;
-    int forwardDepth;
-    
-    braces.push(1);
-
-    while(!braces.empty()) {
-        type = streamptr->getType();
-
-        switch(type) {
-            case NodeType::OPENBRACE:
-                braces.push(1);
-                break;
-            case NodeType::CLOSEBRACE:
-                braces.pop();
-                break;
-            case NodeType::ENDOFLINE:
-                streamptr = streamptr->getNext();
-                break;
-            default:
-                type = streamptr->getType();
-                auto node = parse(*streamptr);
-                bodyNodes.push_back(std::move(node));
-
-                if(type == NodeType::FORLOOP) {
-                    streamptr = streamptr->forwardType(NodeType::OPENBRACE)->getNext();
-                    forwardDepth = nvyc::ParserUtils::getDepth(*streamptr, NodeType::OPENBRACE, NodeType::CLOSEBRACE) + 1;
-                    streamptr = streamptr->forward(forwardDepth);
-                }
-                
-                else if(type != NodeType::IF) streamptr = streamptr->forwardType(NodeType::ENDOFLINE);
-                else braces.pop();
-                break;
-        }
-    }
-
-    return bodyNodes;
 }
 
 

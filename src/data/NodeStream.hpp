@@ -159,6 +159,14 @@ public:
 		return current;
 	}
 
+	NodeStream* backward(int dist) {
+		NodeStream* current = this;
+		for(int i = 0; i < dist; i++) {
+			if(current) current = current->getPrev();
+		}
+		return current;
+	}
+
 	NodeStream* get() {
 		return this;
 	}
