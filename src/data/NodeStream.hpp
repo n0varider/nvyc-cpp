@@ -184,6 +184,19 @@ public:
 		return copy->backtrack();
 	}
 
+	NodeStream* backwardCopy() const {
+		NodeStream* head = const_cast<NodeStream*>(this);
+		int depth = 0;
+		NodeStream* copy = new NodeStream(head->getType(), head->getData());
+		while((head = head->getPrev())) {
+			copy->setPrev(new NodeStream(head->getType(), head->getData()));
+			copy = copy->getPrev();
+			depth++;
+		}
+
+		return copy->forward(depth);
+	}
+
 	// Creates deep copy of stream and automatically moves to node it was copied at
 	NodeStream* deepCopy() const {
 		int dist = 0;

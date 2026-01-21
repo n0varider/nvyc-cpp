@@ -21,6 +21,7 @@ namespace nvyc {
 
             // Block statements
             std::unique_ptr<NASTNode> parseFunction(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseFunctionCall(NodeStream& stream);
             std::unique_ptr<NASTNode> parseForLoop(NodeStream& stream);
             std::unique_ptr<NASTNode> parseWhileLoop(NodeStream& stream);
             std::unique_ptr<NASTNode> parseConditional(NodeStream& stream);
@@ -37,6 +38,7 @@ namespace nvyc {
             void resolveDoubleTokens(NodeStream& stream);
             std::vector<NodeStream*> parselist(NodeStream& root);
             std::vector<std::unique_ptr<NASTNode>> parseBodyNodes(NodeStream& stream);
+            std::vector<NodeStream*> getFunctionCallArgs(NodeStream& stream);
 
         public:
             std::unique_ptr<NASTNode> parse(NodeStream& stream);

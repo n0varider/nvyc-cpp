@@ -44,6 +44,25 @@ namespace nvyc::ParserUtils {
         node.getSubnode(bodyIndex)->addSubnode(std::move(bodyNode));
     }
 
+    NodeStream* moveToMatchingDelimiter(NodeStream& stream, NodeType open, NodeType close) {
+        std::stack<int> stack;
+        auto streamptr = &stream;
+        NodeType type;
+        stack.push(1);
+
+        while(!stack.empty() && streamptr) {
+            type = streamptr->getType();
+
+            if(type == open) stack.push(1);
+            else if(type == close) stack.pop();
+
+            streamptr = streamptr->getNext();
+        
+        }
+
+        return streamptr;
+    }
+
 
     // ----------------------------------------------
     // -                FUNCTIONS                   -
@@ -68,10 +87,18 @@ namespace nvyc::ParserUtils {
     void addFunctionArg(NASTNode& function, std::unique_ptr<NASTNode> arg) {
         function.getSubnode(FUNCTION_ARGS)->addSubnode(std::move(arg));
     }
+    
+    void addFunctionCallArg(NASTNode& function, std::unique_ptr<NASTNode> arg) {
+        function.addSubnode(std::move(arg));
+    }
 
     void setFunctionReturnType(NASTNode& function, NodeType type) {
         auto returnNode = createNode(type, NULL_VALUE);
         function.getSubnode(FUNCTION_RETURN)->addSubnode(std::move(returnNode));
+    }
+
+    std::unique_ptr<NASTNode> createFunctionCall(const std::string& name) {
+        return createNode(NodeType::FUNCTIONCALL, Value(name));
     }
 
 
