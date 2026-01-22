@@ -23,24 +23,14 @@ std::unique_ptr<NASTNode> nvyc::Parser::parse(NodeStream& stream) {
     switch(type) {
         case NodeType::FUNCTION:
             SWITCHNODE(parseFunction, stream);
-            //node = parseFunction(stream);
-            //break;
         case NodeType::VARDEF:
             SWITCHNODE(parseVardef, stream);
-            //node = parseVardef(stream);
-            //break;
         case NodeType::RETURN:
             SWITCHNODE(parseReturn, stream);
-            //node = parseReturn(stream);
-            //break;
         case NodeType::FORLOOP:
             SWITCHNODE(parseForLoop, stream);
-            //node = parseForLoop(stream);
-            //break;
         case NodeType::IF:
             SWITCHNODE(parseConditional, stream);
-            //node = parseConditional(stream);
-            //break;
         case NodeType::FUNCTIONCALL:
             SWITCHNODE(parseFunctionCall, stream);
         case NodeType::VARIABLE:
@@ -73,11 +63,11 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
     streamptr = streamptr->forward(nvyc::ParserUtils::FUNCTION_FORWARD_FIRSTARG); 
     auto functionNode = nvyc::ParserUtils::createFunction(functionName);
 
+    std::cout << "Fname " << functionName << std::endl;
+
     // Loop until every function parameter is parsed
     while(streamptr->getType() != NodeType::CLOSEPARENS) {
         NodeType varType = streamptr->getType();
-        //void* varNamePtr = streamptr->getNext()->getData();
-        //std::string varName = nvyc::symbols::getStringValue(NodeType::STR, varNamePtr);
         std::string varName = streamptr->getNext()->getData().asString();
         auto variableNode = nvyc::ParserUtils::createNode(NodeType::VARIABLE, Value(varName));
 
@@ -264,7 +254,6 @@ std::vector<NodeStream*> nvyc::Parser::getFunctionCallArgs(NodeStream& stream) {
     if(streamptr->getType() == NodeType::CLOSEPARENS) {
         return nodes;
     }
-
     auto copy = streamptr->forwardCopy();
     copy->cutHead();
     
@@ -280,8 +269,7 @@ std::vector<NodeStream*> nvyc::Parser::getFunctionCallArgs(NodeStream& stream) {
 
         else if(type == NodeType::CLOSEPARENS) {
             args.pop();
-            if(args.empty()) nodes.push_back(copy->backwardCopy());
-            // copy.prev().cutoffandReturn();
+            if(args.empty()) nodes.push_back(copy->getPrev()->backwardCopy());
         }
 
         else if(args.size() == 1 && type == NodeType::COMMADELIMIT) {
@@ -365,9 +353,9 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseExpression(NodeStream& stream) {
         }
 
         else if(tokenType == NodeType::FUNCTIONCALL) {
-            int depth; // = nvyc::ParserUtils::getDepth(streamptr, OPENPARENS, CLOSEPARENS)
-            // valueStack.push(parseFunctionCall(...));
-            // streamptr = streamptr->forward(depth);
+            int depth = nvyc::ParserUtils::getDepth(*streamptr, NodeType::OPENPARENS, NodeType::CLOSEPARENS);
+            valueStack.push(parseFunctionCall(stream));
+            streamptr = streamptr->forward(depth);
             expectUnary = false;
         }
 

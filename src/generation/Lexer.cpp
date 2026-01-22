@@ -195,9 +195,8 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
             }
 
             if(isalnum(ch) || ch == '_') {
-                bool isUnderscoreOrDot = line[i] == '_' || line[i] == '.';
                 std::string value;
-                while(i < line.length() && (isalnum(line[i]) || isUnderscoreOrDot)) {
+                while(i < line.length() && (isalnum(line[i]) || line[i] == '_' || line[i] == '.')) {
                     value += line[i];
                     i++;
                 }
