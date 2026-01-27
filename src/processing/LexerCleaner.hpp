@@ -17,6 +17,9 @@ namespace nvyc::Processing {
 
     void resolveFunctionCalls(NodeStream* stream);
     void mangleFunctions(std::string module, std::vector<std::string>* lines);
+    void resolveSpecialSymbols(NodeStream* root);
+    bool isArrayPattern(NodeStream* stream);
+    
     bool startsWith(std::string str, std::string start);
     void removeInlineComments(std::vector<std::string> txt);
     int idxOfComment(std::string s);

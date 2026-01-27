@@ -42,7 +42,7 @@ namespace nvyc::ParserUtils {
     static constexpr int FORLOOP_ITERATION = 2;
     static constexpr int FORLOOP_BODY = 3;
 
-    // Generic
+    // Generic / Utility
     inline static std::unique_ptr<NASTNode> createNode(NodeType type, Value value) {
         return std::make_unique<NASTNode>(type, value);
     }
@@ -50,6 +50,7 @@ namespace nvyc::ParserUtils {
     void addBodyNode(NASTNode& node, std::unique_ptr<NASTNode> bodyNode);
     int getDepth(NodeStream&, NodeType open, NodeType close);
     NodeStream* moveToMatchingDelimiter(NodeStream& stream, NodeType open, NodeType close);
+    std::vector<NodeStream*> getParseList(NodeStream& root);
 
     // Functions
     std::unique_ptr<NASTNode> createFunction(const std::string& name);

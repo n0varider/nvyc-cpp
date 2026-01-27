@@ -7,6 +7,7 @@
 
 namespace nvyc {
 
+
     struct Value {
         NodeType type = NodeType::INVALID;
         std::string str;
@@ -42,6 +43,8 @@ namespace nvyc {
             return "unknown";
         }
     };
+
+    inline const Value NULL_VALUE = Value(NodeType::VOID);
 
 } // namespace nvyc
 

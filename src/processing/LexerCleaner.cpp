@@ -43,10 +43,121 @@ namespace nvyc::Processing {
         }
     }
 
+
+    // Turn BITAND BITAND into LOGICAND, Arrays, etc.
+    void resolveSpecialSymbols(NodeStream* root) {
+        while(root && root->getType() != NodeType::ENDOFSTREAM) {
+
+            if(root->getNext()) {
+                NodeType currentType = root->getType();
+                NodeType nextType = root->getNext()->getType();
+
+                // Check for pointer types
+                if(nvyc::symbols::TYPE_SYMBOLS.count(currentType) && nextType == NodeType::MUL) {
+                    std::string pointerType = nvyc::symbols::nodeTypeToString(currentType);
+                    NodeStream* foot = root->getNext();
+
+                    while(foot->getType() == NodeType::MUL) {
+                        pointerType += "*";
+                        foot = foot->getNext();
+                    }
+
+                    foot->setPrev(root);
+                    root->setType(NodeType::STAR);
+                    root->setData(Value(pointerType));
+
+                    // This leaks memory by skipping all nodes between root and foot. 
+                    // It won't be an issue once Boxes are implemented
+                    root->setNext(foot);
+                }
+
+                // Arrays
+                else if(
+                    nvyc::symbols::TYPE_SYMBOLS.contains(currentType) &&
+                    root->getNext()->getType() == NodeType::OPENBRKT &&
+                    root->forward(2)->getType() == NodeType::CLOSEBRKT
+                ) {
+                    NodeStream* array = new NodeStream(NodeType::ARRAY_TYPE, Value(currentType));
+                    
+                    /*
+                        Normally the stream looks like this
+                        ... TYPE OPENBRKT CLOSEBRKT ...
+                        P   Root N        N         N
+
+                        We move to the 3rd N to get the next node
+                    */
+                    array->setPrev(root->getPrev());
+                    array->setNext(root->forward(3));
+                    root = array->getNext();
+                }
+
+                else if(isArrayPattern(root)) {
+                    // Root initially at VARIABLE
+                    // Input:   ... VARIABLE OPENBRKT [INT/VARIABLE] CLOSEBRKT ...
+                    // Output:  ... ARRAY_ACCESS VARIABLE [INT/VARIABLE] ...
+                    NodeStream* size = root->forward(2);
+                    Value index = size->getData();
+                    NodeStream* accessNode;
+                    NodeStream* countNode;
+
+                    // If the "variable" is a type, it's array creation
+                    std::cout << nvyc::symbols::nodeTypeToString(root->getType());
+                    if(nvyc::symbols::TYPE_SYMBOLS.count(root->getType())) {
+                        NodeType type = root->getType();
+                        accessNode = new NodeStream(NodeType::ARRAY, nvyc::NULL_VALUE);
+                    }
+
+                    // Otherwise, it is an array access
+                    else {
+                        std::string arrayVariable = root->getData().asString();
+                        accessNode = new NodeStream(NodeType::ARRAY_ACCESS, nvyc::NULL_VALUE);
+                    }
+
+                    countNode = new NodeStream(size->getType(), Value(index));
+                    
+                    // This leaks memory
+                    countNode->setNext(root->forward(4));
+                    root->forward(4)->setPrev(countNode);
+
+                    countNode->setPrev(root);
+                    root->setNext(countNode);
+                    
+                    accessNode->setPrev(root->getPrev());
+                    root->setPrev(accessNode);
+                    accessNode->setNext(root);
+                    root = accessNode->forward(2);
+                }
+
+                // builtin types
+                // ...
+
+                // 
+            }
+            root = root->getNext();
+
+        }
+    }
+
+
     // Utility
 
     bool startsWith(std::string str, std::string start) {
         return str.compare(0, start.length(), start) == 0;
+    }
+
+    bool isArrayPattern(NodeStream* stream) {
+        // Needs to match [VARIABLE/TYPE] OPENBRKT [INT/VARIABLE] CLOSEBRKT
+        return
+            (
+                stream->getType() == NodeType::VARIABLE ||
+                nvyc::symbols::TYPE_SYMBOLS.count(stream->getType())
+            ) &&
+            stream->getNext()->getType() == NodeType::OPENBRKT &&
+            (
+                stream->forward(2)->getType() == NodeType::INT32 ||
+                stream->forward(2)->getType() == NodeType::VARIABLE
+            ) &&
+            stream->forward(3)->getType() == NodeType::CLOSEBRKT;
     }
 
 

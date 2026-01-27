@@ -25,32 +25,17 @@ public:
 	static constexpr int CUT_FORWARD = 1;
 	static constexpr int CUT_BACKWARD = -1;
 
-	//NodeStream(NodeType type, void* ptr, bool owned = true)
-	//: dptr(ptr), type(type), owned(owned) {}
-
 	NodeStream(NodeType type, Value v, bool owned = true)
 	: dptr(v), type(type), owned(owned) {}
 
 	~NodeStream() = default;
 
-	// NOT SAFE
-	// Cannot call delete on void*
-	// use delete static_cast<T*>(dptr)
-	// where T* is based on the NodeType
-	/*void free() {
-		if(!owned || !dptr) return;
-		// delete dptr;
-		dptr  = nullptr;
-		owned = false;
-	}*/
-
-	// Get data
-	/*void* getData() const {
-		return dptr;
-	}*/
-
 	Value getData() const {
 		return dptr;
+	}
+
+	void setData(Value v) {
+		dptr = v;
 	}
 
 	// Get NodeType
