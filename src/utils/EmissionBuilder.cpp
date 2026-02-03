@@ -1,13 +1,17 @@
-#include "GenerationUtils.hpp"
+#include "EmissionBuilder.hpp"
 
-namespace nvyc::GenerationUtils {
+namespace nvyc {
 
-    EmissionBuilder::EmissionBuilder(const std::string& moduleName)
-        : llvmContext(),
-          builder(llvmContext),
-          module(std::make_unique<llvm::Module>(moduleName, llvmContext)),
-          name(moduleName)
+    EmissionBuilder::EmissionBuilder(const std::string& moduleName) :
+        llvmContext(),
+        builder(llvmContext),
+        module(std::make_unique<llvm::Module>(moduleName, llvmContext)),
+        name(moduleName)
     {}
+
+    llvm::Module* EmissionBuilder::getModule() {
+        return module.get();
+    }
 
 
     // ----------------------------------------
@@ -84,6 +88,10 @@ namespace nvyc::GenerationUtils {
             nullptr,
             name
         );
+    }
+
+    void EmissionBuilder::storeToVariable(llvm::Value* variable, llvm::Value* value) {
+        builder.CreateStore(value, variable);
     }
 
     llvm::Type* EmissionBuilder::getNativeType(NodeType type) {

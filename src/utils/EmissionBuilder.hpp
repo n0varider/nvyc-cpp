@@ -16,7 +16,7 @@
 using nvyc::NASTNode;
 using nvyc::NodeType;
 
-namespace nvyc::GenerationUtils {
+namespace nvyc {
 
     class EmissionBuilder {
         private:
@@ -27,6 +27,8 @@ namespace nvyc::GenerationUtils {
 
         public:
             EmissionBuilder(const std::string& moduleName);
+
+            llvm::Module* getModule();
 
             llvm::Function* makeFunction(
                 const std::string& name, 
@@ -47,7 +49,7 @@ namespace nvyc::GenerationUtils {
             void setInsertionPoint(llvm::BasicBlock* block);
             llvm::Type* getNativeType(NodeType type);
             void addConstReturnValue(llvm::BasicBlock* block, int i);
-
+            void EmissionBuilder::storeToVariable(llvm::Value* variable, llvm::Value* value);
 
 
     };
