@@ -206,6 +206,7 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
                 if(it != rep.end()) type = it->second;
                 else type = numericNativeType(value);
 
+                // TODO this assumes 12L is an int32 instead of int64 like it should, likely same for floats
                 // Remove trailing L, F, D, or dividing _ for integers
                 if(NUMERICS.count(type)) {
                     int length = value.length();

@@ -13,6 +13,26 @@ namespace nvyc {
         return module.get();
     }
 
+    llvm::IRBuilder<>& EmissionBuilder::getBuilder() {
+        return builder;
+    }
+
+    std::string EmissionBuilder::getCurrentRegister() {
+        return std::to_string(registerId);
+    }
+
+    std::string EmissionBuilder::getAndIncrementRegister() {
+        return std::to_string(registerId++);
+    }
+
+    std::string EmissionBuilder::getPreviousRegister() {
+        return std::to_string(registerId - 1);
+    }
+
+    nvyc::SymbolStorage& EmissionBuilder::getSymbols() {
+        return symbols;
+    }
+
 
     // ----------------------------------------
     //               FUNCTIONS
@@ -83,15 +103,19 @@ namespace nvyc {
     }
 
     llvm::Value* EmissionBuilder::createVariable(const std::string name, NodeType type) {
-        return builder.CreateAlloca(
+        auto alloca = builder.CreateAlloca(
             llvm::Type::getInt32Ty(llvmContext),
             nullptr,
             name
         );
+        getSymbols().storeAlloca(name, alloca);
+        getSymbols().storeType(name, type);
+        return alloca;
     }
 
     void EmissionBuilder::storeToVariable(llvm::Value* variable, llvm::Value* value) {
         builder.CreateStore(value, variable);
+        std::cout << "Value stored" << std::endl;
     }
 
     llvm::Type* EmissionBuilder::getNativeType(NodeType type) {

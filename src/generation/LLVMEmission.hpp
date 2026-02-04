@@ -6,14 +6,15 @@
 
 namespace nvyc {
 
-    void compile(nvyc::EmissionBuilder* mod, std::vector<std::unique_ptr<NASTNode>>& nodes);
-
     static constexpr int EXPR_ARITH = 0;
     static constexpr int EXPR_LOGIC = 1;
 
-    // Will need to pass builders around to build within same BB
-    void compileFunction(nvyc::EmissionBuilder* mod, std::unique_ptr<NASTNode> node);
-    void compileVardef(nvyc::EmissionBuilder* mod, std::unique_ptr<NASTNode> node);
+    void compile(nvyc::EmissionBuilder* mod, std::vector<std::unique_ptr<NASTNode>>& nodes);
+    void compileNode(nvyc::EmissionBuilder* mod, NASTNode* node);
+
+    void compileFunction(nvyc::EmissionBuilder* mod, NASTNode* node);
+    void compileVardef(nvyc::EmissionBuilder* mod, NASTNode* node);
+    llvm::Value* getValue(nvyc::EmissionBuilder* mod, NodeType type, const Value v);
     void compileNative(std::unique_ptr<NASTNode> node);
     void compileFunctionCall(std::unique_ptr<NASTNode> node);
     void compileAssign(std::unique_ptr<NASTNode> node);

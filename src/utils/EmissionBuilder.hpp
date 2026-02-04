@@ -9,9 +9,11 @@
 #include "llvm/IR/Value.h"
 #include "data/NASTNode.hpp"
 #include "data/NodeType.hpp"
+#include "SymbolStorage.hpp"
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 using nvyc::NASTNode;
 using nvyc::NodeType;
@@ -24,11 +26,20 @@ namespace nvyc {
             llvm::IRBuilder<> builder;
             std::unique_ptr<llvm::Module> module;
             std::string name;
+            int registerId = 0;
+            nvyc::SymbolStorage symbols;
 
         public:
             EmissionBuilder(const std::string& moduleName);
 
             llvm::Module* getModule();
+            llvm::IRBuilder<>& getBuilder();
+            nvyc::SymbolStorage& getSymbols();
+
+            std::string getCurrentRegister();
+            std::string getAndIncrementRegister();
+            std::string getPreviousRegister();
+            void storeLocation(std::string);
 
             llvm::Function* makeFunction(
                 const std::string& name, 
