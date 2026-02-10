@@ -46,6 +46,10 @@ namespace nvyc {
                 return subnodes;
             }   
 
+            const std::vector<std::unique_ptr<NASTNode>>& getSubnodes() const {
+                return subnodes;
+            }
+
             void addSubnode(std::unique_ptr<NASTNode> node) {
                     subnodes.push_back(std::move(node));
             }
@@ -55,11 +59,15 @@ namespace nvyc {
                     return subnodes.at(node).get(); // Automatically throws error if OOB
             }
 
-            std::string asString() {
+            const NASTNode* getSubnode(int node) const {
+                    return subnodes.at(node).get(); // Automatically throws error if OOB
+            }
+
+            std::string asString() const {
                     return asStringHelper("", "");
             }
 
-            std::string asStringHelper(std::string prefix, std::string child) {
+            std::string asStringHelper(std::string prefix, std::string child) const {
                     std::ostringstream oss;
                     oss << prefix;
                     //oss << "Node(" << nvyc::symbols::nodeTypeToString(type) << ", " << nvyc::symbols::getStringValue(type, dptr) << ")\n";

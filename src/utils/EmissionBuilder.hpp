@@ -51,7 +51,10 @@ namespace nvyc {
 
             NodeType typePrecedence(NodeType t1, NodeType t2);
             int lrPrecedence(NodeType t1, NodeType t2);
-            NodeType arithmeticPrecedence(std::unique_ptr<NASTNode> node);
+            NodeType arithmeticPrecedence(const NASTNode* node);
+            int typeToPrecedence(NodeType type);
+            NodeType precedenceToType(int precedence);
+
 
             llvm::FunctionType* buildFunction(std::vector<llvm::Type*> args, NodeType type, bool isVariadic);
             void addReturnValue(llvm::BasicBlock* block, llvm::Value* rv);
@@ -60,7 +63,7 @@ namespace nvyc {
             void setInsertionPoint(llvm::BasicBlock* block);
             llvm::Type* getNativeType(NodeType type);
             void addConstReturnValue(llvm::BasicBlock* block, int i);
-            void EmissionBuilder::storeToVariable(llvm::Value* variable, llvm::Value* value);
+            void storeToVariable(llvm::Value* variable, llvm::Value* value);
 
 
     };

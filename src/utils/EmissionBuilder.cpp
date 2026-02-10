@@ -56,6 +56,9 @@ namespace nvyc {
             llvm::Argument* carg = &*ArgIterator++;
             carg->setName(argNames.at(idx++));
         }
+
+        getSymbols().storeFunType(name, returnType);
+
         return func;
     }
 
@@ -109,13 +112,12 @@ namespace nvyc {
             name
         );
         getSymbols().storeAlloca(name, alloca);
-        getSymbols().storeType(name, type);
+        getSymbols().storeVarType(name, type);
         return alloca;
     }
 
     void EmissionBuilder::storeToVariable(llvm::Value* variable, llvm::Value* value) {
         builder.CreateStore(value, variable);
-        std::cout << "Value stored" << std::endl;
     }
 
     llvm::Type* EmissionBuilder::getNativeType(NodeType type) {
@@ -135,6 +137,60 @@ namespace nvyc {
             case NodeType::STR:
             case NodeType::STR_T:
                 return builder.getPtrTy();
+        }
+    }
+
+    NodeType EmissionBuilder::arithmeticPrecedence(const NASTNode* node) {
+        NodeType type = node->getType();
+
+        // Either a literal, function call, or variable
+        if(node->getSubnodes().empty()) {
+            if(nvyc::symbols::LITERAL_SYMBOLS.count(type)) return type;
+            if(type == NodeType::FUNCTIONCALL) return getSymbols().getFunType(node->getData().str);
+            return getSymbols().getVarType(node->getData().str);
+        }
+
+        // Struct access
+        // ...
+
+        NodeType precedence = NodeType::INT32;
+        for(const auto& subnode : node->getSubnodes()) {
+            precedence = typePrecedence(precedence, arithmeticPrecedence(subnode.get()));
+        }
+
+        return precedence;
+    }
+
+    NodeType EmissionBuilder::typePrecedence(NodeType t1, NodeType t2) {
+        int t1_p = typeToPrecedence(t1);
+        int t2_p = typeToPrecedence(t2);
+
+        if(t1_p > t2_p) return t1;
+        else return t2;
+
+    }
+
+    int EmissionBuilder::typeToPrecedence(NodeType type) {
+        switch(type) {
+            case NodeType::CHAR:    return -1;
+            case NodeType::SHORT:   return 0;
+            case NodeType::INT32:   return 1;
+            case NodeType::INT64:   return 2;
+            case NodeType::FP32:    return 3;
+            case NodeType::FP64:    return 4;
+            default:                return -10;
+        }
+    }
+
+    NodeType EmissionBuilder::precedenceToType(int precedence) {
+        switch(precedence) {
+            case -1:    return NodeType::CHAR;
+            case 0:     return NodeType::SHORT;
+            case 1:     return NodeType::INT32;
+            case 2:     return NodeType::INT64;
+            case 3:     return NodeType::FP32;
+            case 4:     return NodeType::FP64;
+            default:    return NodeType::INVALID;
         }
     }
 }

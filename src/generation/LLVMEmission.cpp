@@ -1,9 +1,9 @@
 #include "LLVMEmission.hpp"
 #include "utils/EmissionBuilder.hpp"
 #include <unordered_map>
+#include <cstdint>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/raw_ostream.h>
-#include <cstdint>
 
 namespace nvyc {
 
@@ -20,20 +20,23 @@ namespace nvyc {
 
     */
 
-    void compileNode(nvyc::EmissionBuilder* mod, NASTNode* node) {
+    void compileNode(nvyc::EmissionBuilder* mod, const NASTNode* node) {
         NodeType type = node->getType();
         switch(type) {
             case NodeType::FUNCTION:
-                compileFunction(mod, std::move(node));
+                compileFunction(mod, node);
                 break;
             case NodeType::VARDEF:
-                compileVardef(mod, std::move(node));
+                compileVardef(mod, node);
+                break;
+            case NodeType::ADD:
+                compileExpression(mod, node, 0);
                 break;
         }
     }
 
 
-    void compile(nvyc::EmissionBuilder* mod, std::vector<std::unique_ptr<NASTNode>>& nodes) {
+    void compile(nvyc::EmissionBuilder* mod, const std::vector<std::unique_ptr<NASTNode>>& nodes) {
 
         for(auto& node : nodes) {
             compileNode(mod, node.get());
@@ -44,7 +47,7 @@ namespace nvyc {
 
 
 
-    void compileFunction(nvyc::EmissionBuilder* mod, NASTNode* node) {
+    void compileFunction(nvyc::EmissionBuilder* mod, const NASTNode* node) {
         std::string funcName = node->getData().asString();
         NodeType funcRType = node->getSubnode(1)->getSubnode(0)->getType();
         int rv = node->getSubnode(2)->getSubnode(0)->getSubnode(0)->getData().i32;
@@ -56,7 +59,7 @@ namespace nvyc {
         auto block = mod->createBlock(Func, "entry");
         mod->setInsertionPoint(block);
 
-        std::vector<std::unique_ptr<NASTNode>>& bodyNodes = node->getSubnode(2)->getSubnodes();
+        const std::vector<std::unique_ptr<NASTNode>>& bodyNodes = node->getSubnode(2)->getSubnodes();
         for(auto& bodyNode : bodyNodes) {
             compileNode(mod, bodyNode.get());
         }
@@ -88,7 +91,7 @@ namespace nvyc {
             }
             case NodeType::VARIABLE: {
                 std::string var = v.str;
-                NodeType otherType = mod->getSymbols().getType(var);
+                NodeType otherType = mod->getSymbols().getVarType(var);
                 val = mod->getBuilder().CreateLoad(mod->getNativeType(otherType), mod->getSymbols().getAlloca(var), var + "_val");
                 break;
             }
@@ -109,29 +112,68 @@ namespace nvyc {
                     -- Node(VARIABLE, x)
                     -- Node(VARIABLE, y)
     */
-    void compileVardef(nvyc::EmissionBuilder* mod, NASTNode* node) {
+    void compileVardef(nvyc::EmissionBuilder* mod, const NASTNode* node) {
         std::string name = node->getData().str;
-        NodeType type = node->getSubnode(0)->getType();
-
-        llvm::Value* var = mod->createVariable(name, type);
+        NodeType type;
+        
+        llvm::Value* var;
         llvm::Value* val;
 
-
-
         if(nvyc::symbols::LITERAL_SYMBOLS.count(type) || type == NodeType::VARIABLE) {
+            type = node->getSubnode(0)->getType();
+            var = mod->createVariable(name, type);
             val = getValue(mod, type, node->getSubnode(0)->getData());
         }
         
         else if (nvyc::symbols::ARITH_SYMBOLS.count(type)) {
-            auto node1 = node->getSubnode(0)->getSubnode(0);
-            auto node2 = node->getSubnode(0)->getSubnode(1);
-            NodeType t1 = node1->getType();
-            NodeType t2 = node2->getType();
-            llvm::Value* val1 = getValue(mod, t1, node1->getData());
-            llvm::Value* val2 = getValue(mod, t2, node2->getData());
-            val = mod->getBuilder().CreateAdd(val1, val2, mod->getAndIncrementRegister());
+            type = mod->arithmeticPrecedence(node);
+            var = mod->createVariable(name, type);
+            val = compileExpression(mod, node->getSubnode(0), 0);
+            
         }
         mod->storeToVariable(var, val);
+    }
+
+    llvm::Value* compileExpression(nvyc::EmissionBuilder* mod, const NASTNode* node, int exprType) {
+        NodeType op = node->getType();
+        llvm::Value* lhs_llvm;
+        llvm::Value* rhs_llvm;
+
+        const NASTNode* lhs = node->getSubnode(0);
+        const NASTNode* rhs = node->getSubnode(1);
+        NodeType lhsType = lhs->getType();
+        NodeType rhsType = rhs->getType();
+
+        std::string lhsVariable = lhs->getData().str;
+        std::string rhsVariable = rhs->getData().str;
+
+        if(lhsType == NodeType::VARIABLE) {
+            lhs_llvm = mod->getSymbols().getAlloca(lhsVariable);
+            lhsType = mod->getSymbols().getVarType(lhsVariable);
+            lhs_llvm = mod->getBuilder().CreateLoad(mod->getNativeType(lhsType), lhs_llvm, lhsVariable + "_val");
+
+        }else{
+            std::cout << "LITERAL1" << std::endl;
+            std::cout << lhs->asString() << std::endl;
+            lhs_llvm = getValue(mod, lhsType, lhs->getData());
+            if(lhs_llvm) std::cout << "VALID" << std::endl;
+        }
+
+
+        if(rhsType == NodeType::VARIABLE) {
+            rhs_llvm = mod->getSymbols().getAlloca(rhsVariable);
+            rhsType = mod->getSymbols().getVarType(rhsVariable);
+            rhs_llvm = mod->getBuilder().CreateLoad(mod->getNativeType(rhsType), rhs_llvm, rhsVariable + "_val");
+        }else{
+            std::cout << "LITERAL2" << std::endl;
+            std::cout << rhs->asString() << std::endl;
+            rhs_llvm = getValue(mod, rhsType, rhs->getData());
+            if(rhs_llvm) std::cout << "VALID" << std::endl;
+        }
+
+        return mod->getBuilder().CreateAdd(lhs_llvm, rhs_llvm, mod->getAndIncrementRegister());
+    
+    
     }
 
 }
