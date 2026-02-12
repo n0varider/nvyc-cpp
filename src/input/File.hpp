@@ -13,4 +13,6 @@ class File {
         File(const std::string& path);
         bool load();
         const std::vector<std::string>& getLines() const;
-};
+        bool File::save(const std::vector<std::string>& lines);
+        const std::string& getPath() const;
+    };

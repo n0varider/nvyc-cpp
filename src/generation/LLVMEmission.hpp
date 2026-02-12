@@ -3,6 +3,7 @@
 #include "data/NASTNode.hpp"
 #include "data/NodeType.hpp"
 #include "utils/EmissionBuilder.hpp"
+#include "error/Debug.hpp"
 
 namespace nvyc {
 
@@ -23,7 +24,9 @@ namespace nvyc {
     void compileConditional(std::unique_ptr<NASTNode> node);
     void compileForLoop(std::unique_ptr<NASTNode> node);
     void compileWhileLoop(std::unique_ptr<NASTNode> node);
+    
     llvm::Value* compileExpression(nvyc::EmissionBuilder* mod, const NASTNode* node, int exprType);
+    llvm::Value* compileReturn(nvyc::EmissionBuilder* mod, const NASTNode* node);
 
     // Utility
 

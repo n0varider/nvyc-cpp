@@ -1,4 +1,6 @@
 #include "Lexer.hpp"
+#include "error/Error.hpp"
+#include "error/Debug.hpp"
 #include <sstream>
 #include <algorithm>
 #include <cctype>
@@ -92,41 +94,79 @@ void nvyc::Lexer::init() {
     rep["\\"] = NodeType::BSLASH;
 }
 
-NodeType nvyc::Lexer::numericNativeType(const std::string& s) const {
-    try { 
-        std::stoi(s); return NodeType::INT32; 
-    } catch (...) {
-        try {
-            if (!s.empty() && s.back() == 'L') { 
-                std::stol(s.substr(0, s.size()-1)); 
-                return NodeType::INT64; 
-            }
-            std::stol(s); 
-            return NodeType::INT64;
-        } catch (...) {
-            try {
-                if (!s.empty() && s.back() == 'F') { 
-                    std::stof(s.substr(0, s.size()-1)); 
-                    return NodeType::FP32; 
-                }
-                if (!s.empty() && s.back() == 'D') { 
-                    std::stod(s.substr(0, s.size()-1)); 
-                    return NodeType::FP64; 
-                }
-                std::stof(s); 
-                return NodeType::FP32;
-            } catch (...) {
-                try { 
-                    std::stod(s); 
-                    return NodeType::FP64; 
-                }
-                catch (...) {
-                    if (s.size() == 3 && s[0] == '\'' && s[2] == '\'') 
-                        return NodeType::CHAR;
-                    return NodeType::VARIABLE;
-                }
-            }
+bool nvyc::Lexer::isNumericLiteral(const std::string& s) {
+    if (s.empty()) return false;
+
+    bool hasDigit = false;
+
+    for (char c : s) {
+        if (isdigit(c)) {
+            hasDigit = true;
+            continue;
         }
+        if (c == '.' || c == 'e' || c == 'E' ||
+            c == 'F' || c == 'D' || c == '_' ||
+            c == '+' || c == '-') {
+            continue;
+        }
+        return false; 
+    }
+
+    return hasDigit;
+}
+
+NodeType nvyc::Lexer::numericNativeType(const std::string& s) const {
+    char back = s.back();
+    std::string literal = s;
+    nvyc::debug("Numeric: " + s);
+    // Float
+    if (
+        s.find('.') != std::string::npos ||
+        back == 'F' || back == 'D'
+    ) {
+
+        if(back == 'F' || back == 'D') literal.pop_back();
+        double value_float;
+        
+        try {
+            value_float = std::stod(literal);
+        } catch (...) {
+            nvyc::Error::nvyerr_failcompile(-1, "Invalid number: " + s);
+            return NodeType::INVALID;
+        }
+
+        if(back == 'F') return NodeType::FP32;
+        else if(back == 'D') return NodeType::FP64;
+        
+        else if(
+            value_float >= std::numeric_limits<double>::lowest() &&
+            value_float <= std::numeric_limits<double>::max()
+        ) {
+            return NodeType::FP64;
+        }
+    } 
+    
+    else {
+        if(back == 'L') literal.pop_back();
+        int64_t value_int;
+
+        try {
+            value_int = std::stoll(literal);
+        } catch (...) {
+            nvyc::Error::nvyerr_failcompile(-1, "Invalid number: " + s);
+            return NodeType::INVALID;
+        }
+
+        if(back == 'L') return NodeType::INT64;
+
+        if(
+            value_int >= std::numeric_limits<int32_t>::lowest() &&
+            value_int <= std::numeric_limits<int32_t>::max()    
+        ) {
+            return NodeType::INT32;
+        } 
+        
+        return NodeType::INT64;
     }
 }
 
@@ -203,22 +243,13 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
 
                 NodeType type;
                 auto it = rep.find(value);
+
                 if(it != rep.end()) type = it->second;
-                else type = numericNativeType(value);
+                else if(isNumericLiteral(value)) type = numericNativeType(value);
+                else type = NodeType::VARIABLE;
 
-                // TODO this assumes 12L is an int32 instead of int64 like it should, likely same for floats
-                // Remove trailing L, F, D, or dividing _ for integers
-                if(NUMERICS.count(type)) {
-                    int length = value.length();
-                    if(isalpha(value[length-1])) {
-                        value.pop_back();
-                    }
-                    value.erase(std::remove(value.begin(), value.end(), '_'), value.end());
-                    current = convertNumeric(type, value);
-                }else{
-                    current = new NodeStream(type, Value(value));
-                }
-
+                if(NUMERICS.count(type)) current = convertNumeric(type, value);
+                else current = new NodeStream(type, Value(value));
             
                 head->setNext(current);
                 current->setPrev(head);

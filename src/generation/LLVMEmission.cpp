@@ -32,6 +32,9 @@ namespace nvyc {
             case NodeType::ADD:
                 compileExpression(mod, node, 0);
                 break;
+            case NodeType::RETURN:
+                compileReturn(mod, node);
+                break;
         }
     }
 
@@ -42,7 +45,7 @@ namespace nvyc {
             compileNode(mod, node.get());
         }
 
-        mod->getModule()->print(llvm::outs(), nullptr);
+        //mod->getModule()->print(llvm::outs(), nullptr);
     }
 
 
@@ -114,13 +117,12 @@ namespace nvyc {
     */
     void compileVardef(nvyc::EmissionBuilder* mod, const NASTNode* node) {
         std::string name = node->getData().str;
-        NodeType type;
-        
+        NodeType type = node->getSubnode(0)->getType();
+
         llvm::Value* var;
         llvm::Value* val;
 
         if(nvyc::symbols::LITERAL_SYMBOLS.count(type) || type == NodeType::VARIABLE) {
-            type = node->getSubnode(0)->getType();
             var = mod->createVariable(name, type);
             val = getValue(mod, type, node->getSubnode(0)->getData());
         }
@@ -136,44 +138,59 @@ namespace nvyc {
 
     llvm::Value* compileExpression(nvyc::EmissionBuilder* mod, const NASTNode* node, int exprType) {
         NodeType op = node->getType();
-        llvm::Value* lhs_llvm;
-        llvm::Value* rhs_llvm;
 
-        const NASTNode* lhs = node->getSubnode(0);
-        const NASTNode* rhs = node->getSubnode(1);
-        NodeType lhsType = lhs->getType();
-        NodeType rhsType = rhs->getType();
+        // Arithmetic & Logical ops
+        if(nvyc::symbols::ARITH_SYMBOLS.count(op) || nvyc::symbols::LOGIC_SYMBOLS.count(op)) {
+            
+            llvm::Instruction::BinaryOps instOp = mod->getInstruction(op);
+            // In order of LHS, RHS
+            llvm::Value* values[2];
+            const NASTNode* operands[2] = {node->getSubnode(0), node->getSubnode(1)};
+            NodeType types[2] = {operands[0]->getType(), operands[1]->getType()};
+            std::string variableNames[2] = {operands[0]->getData().str, operands[1]->getData().str};
 
-        std::string lhsVariable = lhs->getData().str;
-        std::string rhsVariable = rhs->getData().str;
+            for(int i = 0; i < 2; i++) {
+                types[i] = operands[i]->getType();
+                NodeType sideType = types[i];
+                const std::string sideVariable = variableNames[i];
+                llvm::Value* sideValue;
 
-        if(lhsType == NodeType::VARIABLE) {
-            lhs_llvm = mod->getSymbols().getAlloca(lhsVariable);
-            lhsType = mod->getSymbols().getVarType(lhsVariable);
-            lhs_llvm = mod->getBuilder().CreateLoad(mod->getNativeType(lhsType), lhs_llvm, lhsVariable + "_val");
+                if(sideType == NodeType::VARIABLE) {
+                    sideValue = mod->getSymbols().getAlloca(sideVariable);
+                    sideType = mod->getSymbols().getVarType(sideVariable);
+                    values[i] = mod->getBuilder().CreateLoad(mod->getNativeType(sideType), sideValue);
+                }
+                
+                else{
+                    values[i] = getValue(mod, sideType, operands[i]->getData());
+                }
+            }
 
-        }else{
-            std::cout << "LITERAL1" << std::endl;
-            std::cout << lhs->asString() << std::endl;
-            lhs_llvm = getValue(mod, lhsType, lhs->getData());
-            if(lhs_llvm) std::cout << "VALID" << std::endl;
+            return mod->getBuilder().CreateBinOp(instOp, values[0], values[1]);
         }
+    
+    }
 
+    llvm::Value* compileReturn(nvyc::EmissionBuilder* mod, const NASTNode* node) {
+        const NASTNode* returnValue = node->getSubnode(0);
+        NodeType type = returnValue->getType();
 
-        if(rhsType == NodeType::VARIABLE) {
-            rhs_llvm = mod->getSymbols().getAlloca(rhsVariable);
-            rhsType = mod->getSymbols().getVarType(rhsVariable);
-            rhs_llvm = mod->getBuilder().CreateLoad(mod->getNativeType(rhsType), rhs_llvm, rhsVariable + "_val");
-        }else{
-            std::cout << "LITERAL2" << std::endl;
-            std::cout << rhs->asString() << std::endl;
-            rhs_llvm = getValue(mod, rhsType, rhs->getData());
-            if(rhs_llvm) std::cout << "VALID" << std::endl;
+        llvm::Value* value = nullptr;
+
+        // Ideally, compileExpression should handle almost everything
+
+        if(type == NodeType::VARIABLE) {
+            std::string variable = returnValue->getData().str;
+            type = mod->getSymbols().getVarType(variable);
+            value = mod->getBuilder().CreateLoad(mod->getNativeType(type), mod->getSymbols().getAlloca(variable));
+            return mod->getBuilder().CreateRet(value);
+        } 
+
+        else if(nvyc::symbols::LITERAL_SYMBOLS.count(type)) {
+            value = getValue(mod, type, returnValue->getData());
+            return mod->getBuilder().CreateRet(value);
         }
-
-        return mod->getBuilder().CreateAdd(lhs_llvm, rhs_llvm, mod->getAndIncrementRegister());
-    
-    
+        
     }
 
 }

@@ -7,6 +7,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
+#include "llvm/IR/Constant.h"
 #include "data/NASTNode.hpp"
 #include "data/NodeType.hpp"
 #include "SymbolStorage.hpp"
@@ -14,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <cstddef>
 
 using nvyc::NASTNode;
 using nvyc::NodeType;
@@ -54,6 +56,7 @@ namespace nvyc {
             NodeType arithmeticPrecedence(const NASTNode* node);
             int typeToPrecedence(NodeType type);
             NodeType precedenceToType(int precedence);
+            llvm::Instruction::BinaryOps getInstruction(NodeType type);
 
 
             llvm::FunctionType* buildFunction(std::vector<llvm::Type*> args, NodeType type, bool isVariadic);
@@ -65,6 +68,28 @@ namespace nvyc {
             void addConstReturnValue(llvm::BasicBlock* block, int i);
             void storeToVariable(llvm::Value* variable, llvm::Value* value);
 
+            // Replacement for getValue() in LLVMEmission
+            /*
+            template <typename T>
+            llvm::Constant* makeConstant(T value) {
+
+                // Check int32/int64
+                if constexpr (std::is_integral_v<T>) {
+                    size_t size = sizeof(T) * 8;
+
+                    // Signed by default for now
+                    return llvm::ConstantInt::get(llvm::IntegerType::get(context, size), value, true);
+                } 
+
+                else if constexpr (std::is_floating_point_v<T>) {
+                    llvm::Type* type;
+                    if constexpr (std::is_same_v<T, float>)            type = llvm::Type::getFloatTy(context);
+                    else if constexpr (std::is_same_v<T, double>)      type = llvm::Type::getDoubleTy(context);
+                    else if constexpr (std::is_same_v<T, long double>) type = llvm::Type::getFP128Ty(context);
+                    return llvm::ConstantFP::get(type, value);
+                } 
+            }
+            */
 
     };
 } // namespace nvyc::GenerationUtils

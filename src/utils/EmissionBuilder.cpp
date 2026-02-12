@@ -107,7 +107,7 @@ namespace nvyc {
 
     llvm::Value* EmissionBuilder::createVariable(const std::string name, NodeType type) {
         auto alloca = builder.CreateAlloca(
-            llvm::Type::getInt32Ty(llvmContext),
+            getNativeType(type),
             nullptr,
             name
         );
@@ -191,6 +191,16 @@ namespace nvyc {
             case 3:     return NodeType::FP32;
             case 4:     return NodeType::FP64;
             default:    return NodeType::INVALID;
+        }
+    }
+
+    llvm::Instruction::BinaryOps EmissionBuilder::getInstruction(NodeType type) {
+        switch(type) {
+            case NodeType::ADD: return llvm::Instruction::Add;
+            case NodeType::SUB: return llvm::Instruction::Sub;
+            case NodeType::MUL: return llvm::Instruction::Mul;
+            case NodeType::DIV: return llvm::Instruction::SDiv;
+            default: return llvm::Instruction::Add; // Temporary fallback
         }
     }
 }

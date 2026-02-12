@@ -13,6 +13,7 @@ namespace nvyc::Error {
     inline void nvyerr_failcompile(int ec, std::string msg) {
         std::cout << "nvy > Failed to compile with code " << ec << "\n";
         if(msg != NULLERR) std::cout << msg << std::endl;
+        std::exit(ec);
     }
 
 }

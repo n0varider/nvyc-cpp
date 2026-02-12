@@ -26,6 +26,7 @@ namespace nvyc {
             static Lexer& getInstance();
             NodeStream* lex(const std::vector<std::string>& lines);
             NodeStream* convertNumeric(NodeType type, const std::string& value);
+            bool isNumericLiteral(const std::string& s);
             
     }; // Lexer
 
