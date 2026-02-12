@@ -194,13 +194,62 @@ namespace nvyc {
         }
     }
 
-    llvm::Instruction::BinaryOps EmissionBuilder::getInstruction(NodeType type) {
+    llvm::Value* EmissionBuilder::createArithmeticOperation(NodeType type, bool isFloat, bool isSigned, llvm::Value* lhs, llvm::Value* rhs) {
+        llvm::Instruction::BinaryOps op;
+        
         switch(type) {
-            case NodeType::ADD: return llvm::Instruction::Add;
-            case NodeType::SUB: return llvm::Instruction::Sub;
-            case NodeType::MUL: return llvm::Instruction::Mul;
-            case NodeType::DIV: return llvm::Instruction::SDiv;
-            default: return llvm::Instruction::Add; // Temporary fallback
+            case NodeType::ADD: {
+                if(isFloat)         op = llvm::Instruction::FAdd;
+                else                op = llvm::Instruction::Add;
+                break;
+            }
+            case NodeType::SUB: {
+                if(isFloat)         op = llvm::Instruction::FSub;
+                else                op = llvm::Instruction::Sub;
+                break;
+            }
+            case NodeType::MUL: {
+                if(isFloat)         op = llvm::Instruction::FMul;
+                else                op = llvm::Instruction::Mul;
+                break;
+            }
+            case NodeType::DIV: {
+                if(isFloat)         op = llvm::Instruction::FDiv;
+                else if(isSigned)   op = llvm::Instruction::UDiv;
+                else                op = llvm::Instruction::SDiv;
+                break;
+            }
+            default: {
+                op = llvm::Instruction::Add;
+                break;
+            }
+        }
+
+        return builder.CreateBinOp(op, lhs, rhs);
+    }
+
+    llvm::Value* EmissionBuilder::createLogicalOperation(NodeType type, bool isFloat, bool isUnsigned, llvm::Value* lhs, llvm::Value* rhs) {
+        switch(type) {
+            case NodeType::LT:  {
+                if(isFloat)     return builder.CreateFCmpOLT(lhs, rhs);
+                if(isUnsigned)  return builder.CreateICmpULT(lhs, rhs);
+                                return builder.CreateICmpSLT(lhs, rhs);
+            }
+            case NodeType::LTE:  {
+                if(isFloat)     return builder.CreateFCmpOLE(lhs, rhs);
+                if(isUnsigned)  return builder.CreateICmpULE(lhs, rhs);
+                                return builder.CreateICmpSLE(lhs, rhs);
+            }
+            case NodeType::GT:  {
+                if(isFloat)     return builder.CreateFCmpOGT(lhs, rhs);
+                if(isUnsigned)  return builder.CreateICmpUGT(lhs, rhs);
+                                return builder.CreateICmpSGT(lhs, rhs);
+            }
+            case NodeType::GTE:  {
+                if(isFloat)     return builder.CreateFCmpOGE(lhs, rhs);
+                if(isUnsigned)  return builder.CreateICmpUGE(lhs, rhs);
+                                return builder.CreateICmpSGE(lhs, rhs);
+            }
         }
     }
 }

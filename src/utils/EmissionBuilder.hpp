@@ -32,6 +32,11 @@ namespace nvyc {
             nvyc::SymbolStorage symbols;
 
         public:
+            static constexpr int EXPR_NOTFLOAT = 0;
+            static constexpr int EXPR_ISFLOAT = 1;
+            static constexpr int EXPR_SIGNEDINT = 0;
+            static constexpr int EXPR_UNSIGNEDINT = 1;
+
             EmissionBuilder(const std::string& moduleName);
 
             llvm::Module* getModule();
@@ -56,8 +61,8 @@ namespace nvyc {
             NodeType arithmeticPrecedence(const NASTNode* node);
             int typeToPrecedence(NodeType type);
             NodeType precedenceToType(int precedence);
-            llvm::Instruction::BinaryOps getInstruction(NodeType type);
-
+            llvm::Value* createArithmeticOperation(NodeType type, bool isFloat, bool isSigned, llvm::Value* lhs, llvm::Value* rhs);
+            llvm::Value* createLogicalOperation(NodeType type, bool isFloat, bool isUnsigned, llvm::Value* lhs, llvm::Value* rhs);
 
             llvm::FunctionType* buildFunction(std::vector<llvm::Type*> args, NodeType type, bool isVariadic);
             void addReturnValue(llvm::BasicBlock* block, llvm::Value* rv);

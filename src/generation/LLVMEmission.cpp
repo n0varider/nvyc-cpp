@@ -142,7 +142,6 @@ namespace nvyc {
         // Arithmetic & Logical ops
         if(nvyc::symbols::ARITH_SYMBOLS.count(op) || nvyc::symbols::LOGIC_SYMBOLS.count(op)) {
             
-            llvm::Instruction::BinaryOps instOp = mod->getInstruction(op);
             // In order of LHS, RHS
             llvm::Value* values[2];
             const NASTNode* operands[2] = {node->getSubnode(0), node->getSubnode(1)};
@@ -161,12 +160,16 @@ namespace nvyc {
                     values[i] = mod->getBuilder().CreateLoad(mod->getNativeType(sideType), sideValue);
                 }
                 
-                else{
+                else if(nvyc::symbols::LITERAL_SYMBOLS.count(sideType)) {
                     values[i] = getValue(mod, sideType, operands[i]->getData());
+                }
+
+                else {
+                    values[i] = compileExpression(mod, operands[i], exprType);
                 }
             }
 
-            return mod->getBuilder().CreateBinOp(instOp, values[0], values[1]);
+            return mod->createArithmeticOperation(op, mod->EXPR_NOTFLOAT, mod->EXPR_SIGNEDINT, values[0], values[1]);
         }
     
     }
