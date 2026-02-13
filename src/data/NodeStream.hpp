@@ -220,7 +220,7 @@ public:
 	std::string asString() {
 		std::ostringstream oss;
 		//oss << "NodeStream(" << nvyc::symbols::nodeTypeToString(type) << ", " << nvyc::symbols::getStringValue(type, dptr) << ")";
-		oss << "NodeStream(" << nvyc::symbols::nodeTypeToString(type) << ", " << dptr.asString() << ")";
+		oss << "NodeStream(" << symbols::nodeTypeToString(type) << ", " << dptr.asString() << ")";
 		return oss.str();
 	}
 }; // NodeStream

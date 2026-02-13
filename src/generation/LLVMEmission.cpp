@@ -5,6 +5,9 @@
 #include <llvm/IR/Module.h>
 #include <llvm/Support/raw_ostream.h>
 
+using CastType = nvyc::EmissionBuilder::CastType;
+using NumericType = nvyc::EmissionBuilder::NumericType;
+
 namespace nvyc {
 
 
@@ -20,7 +23,7 @@ namespace nvyc {
 
     */
 
-    void compileNode(nvyc::EmissionBuilder* mod, const NASTNode* node) {
+    void compileNode(EmissionBuilder* mod, const NASTNode* node) {
         NodeType type = node->getType();
         switch(type) {
             case NodeType::FUNCTION:
@@ -39,7 +42,7 @@ namespace nvyc {
     }
 
 
-    void compile(nvyc::EmissionBuilder* mod, const std::vector<std::unique_ptr<NASTNode>>& nodes) {
+    void compile(EmissionBuilder* mod, const std::vector<std::unique_ptr<NASTNode>>& nodes) {
 
         for(auto& node : nodes) {
             compileNode(mod, node.get());
@@ -50,7 +53,7 @@ namespace nvyc {
 
 
 
-    void compileFunction(nvyc::EmissionBuilder* mod, const NASTNode* node) {
+    void compileFunction(EmissionBuilder* mod, const NASTNode* node) {
         std::string funcName = node->getData().asString();
         NodeType funcRType = node->getSubnode(1)->getSubnode(0)->getType();
         int rv = node->getSubnode(2)->getSubnode(0)->getSubnode(0)->getData().i32;
@@ -69,7 +72,7 @@ namespace nvyc {
     }
 
 
-    llvm::Value* getValue(nvyc::EmissionBuilder* mod, NodeType type, const Value v) {
+    llvm::Value* getValue(EmissionBuilder* mod, NodeType type, const Value v) {
         llvm::Value* val;
         switch(type) {
             case NodeType::INT32: {
@@ -115,19 +118,19 @@ namespace nvyc {
                     -- Node(VARIABLE, x)
                     -- Node(VARIABLE, y)
     */
-    void compileVardef(nvyc::EmissionBuilder* mod, const NASTNode* node) {
+    void compileVardef(EmissionBuilder* mod, const NASTNode* node) {
         std::string name = node->getData().str;
         NodeType type = node->getSubnode(0)->getType();
 
         llvm::Value* var;
         llvm::Value* val;
 
-        if(nvyc::symbols::LITERAL_SYMBOLS.count(type) || type == NodeType::VARIABLE) {
+        if(symbols::LITERAL_SYMBOLS.count(type) || type == NodeType::VARIABLE) {
             var = mod->createVariable(name, type);
             val = getValue(mod, type, node->getSubnode(0)->getData());
         }
         
-        else if (nvyc::symbols::ARITH_SYMBOLS.count(type)) {
+        else if (symbols::ARITH_SYMBOLS.count(type)) {
             type = mod->arithmeticPrecedence(node);
             var = mod->createVariable(name, type);
             val = compileExpression(mod, node->getSubnode(0), 0);
@@ -136,11 +139,11 @@ namespace nvyc {
         mod->storeToVariable(var, val);
     }
 
-    llvm::Value* compileExpression(nvyc::EmissionBuilder* mod, const NASTNode* node, int exprType) {
+    llvm::Value* compileExpression(EmissionBuilder* mod, const NASTNode* node, int exprType) {
         NodeType op = node->getType();
 
-        bool isArith = nvyc::symbols::ARITH_SYMBOLS.count(op);
-        bool isLogic = nvyc::symbols::LOGIC_SYMBOLS.count(op);
+        bool isArith = symbols::ARITH_SYMBOLS.count(op);
+        bool isLogic = symbols::LOGIC_SYMBOLS.count(op);
 
         // Arithmetic & Logical ops
         if(isArith || isLogic) {
@@ -166,7 +169,7 @@ namespace nvyc {
                     values[i] = mod->getBuilder().CreateLoad(mod->getNativeType(sideType), sideValue);
                 }
                 
-                else if(nvyc::symbols::LITERAL_SYMBOLS.count(sideType)) {
+                else if(symbols::LITERAL_SYMBOLS.count(sideType)) {
                     values[i] = getValue(mod, sideType, operands[i]->getData());
                 }
 
@@ -176,20 +179,21 @@ namespace nvyc {
 
                 // Logic for promotion/demotion
                 if(types[i] != resultType) {
-                    int castType = mod->getCastType(types[i], resultType);
-                    nvyc::debug("CAST TYPE: " + castType);
+                    CastType castType = mod->getCastType(types[i], resultType);
                     values[i] = mod->castNumeric(castType, values[i]);
                 }
 
             }
 
-            if(isArith)      return mod->createArithmeticOperation(op, mod->EXPR_NOTFLOAT, mod->EXPR_SIGNEDINT, values[0], values[1]);
-            else if(isLogic) return mod->createLogicalOperation(op, mod->EXPR_NOTFLOAT, mod->EXPR_SIGNEDINT, values[0], values[1]);
+            NumericType mode = mod->getMode(resultType);
+
+            if(isArith)      return mod->createArithmeticOperation(op, mode, values[0], values[1]);
+            else if(isLogic) return mod->createLogicalOperation(op, mode, values[0], values[1]);
         }
     
     }
 
-    llvm::Value* compileReturn(nvyc::EmissionBuilder* mod, const NASTNode* node) {
+    llvm::Value* compileReturn(EmissionBuilder* mod, const NASTNode* node) {
         const NASTNode* returnValue = node->getSubnode(0);
         NodeType type = returnValue->getType();
 
@@ -204,7 +208,7 @@ namespace nvyc {
             return mod->getBuilder().CreateRet(value);
         } 
 
-        else if(nvyc::symbols::LITERAL_SYMBOLS.count(type)) {
+        else if(symbols::LITERAL_SYMBOLS.count(type)) {
             value = getValue(mod, type, returnValue->getData());
             return mod->getBuilder().CreateRet(value);
         }

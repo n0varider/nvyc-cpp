@@ -2,6 +2,7 @@
 
 namespace nvyc {
 
+
     EmissionBuilder::EmissionBuilder(const std::string& moduleName) :
         llvmContext(),
         builder(llvmContext),
@@ -29,7 +30,7 @@ namespace nvyc {
         return std::to_string(registerId - 1);
     }
 
-    nvyc::SymbolStorage& EmissionBuilder::getSymbols() {
+    SymbolStorage& EmissionBuilder::getSymbols() {
         return symbols;
     }
 
@@ -145,7 +146,7 @@ namespace nvyc {
 
         // Either a literal, function call, or variable
         if(node->getSubnodes().empty()) {
-            if(nvyc::symbols::LITERAL_SYMBOLS.count(type)) return type;
+            if(symbols::LITERAL_SYMBOLS.count(type)) return type;
             if(type == NodeType::FUNCTIONCALL) return getSymbols().getFunType(node->getData().str);
             return getSymbols().getVarType(node->getData().str);
         }
@@ -194,29 +195,29 @@ namespace nvyc {
         }
     }
 
-    llvm::Value* EmissionBuilder::createArithmeticOperation(NodeType type, bool isFloat, bool isSigned, llvm::Value* lhs, llvm::Value* rhs) {
+    llvm::Value* EmissionBuilder::createArithmeticOperation(NodeType type, NumericType mode, llvm::Value* lhs, llvm::Value* rhs) {
         llvm::Instruction::BinaryOps op;
         
         switch(type) {
             case NodeType::ADD: {
-                if(isFloat)         op = llvm::Instruction::FAdd;
-                else                op = llvm::Instruction::Add;
+                if(mode == NumericType::FLOAT)              op = llvm::Instruction::FAdd;
+                else                                        op = llvm::Instruction::Add;
                 break;
             }
             case NodeType::SUB: {
-                if(isFloat)         op = llvm::Instruction::FSub;
-                else                op = llvm::Instruction::Sub;
+                if(mode == NumericType::FLOAT)              op = llvm::Instruction::FSub;
+                else                                        op = llvm::Instruction::Sub;
                 break;
             }
             case NodeType::MUL: {
-                if(isFloat)         op = llvm::Instruction::FMul;
-                else                op = llvm::Instruction::Mul;
+                if(mode == NumericType::FLOAT)              op = llvm::Instruction::FMul;
+                else                                        op = llvm::Instruction::Mul;
                 break;
             }
             case NodeType::DIV: {
-                if(isFloat)         op = llvm::Instruction::FDiv;
-                else if(isSigned)   op = llvm::Instruction::UDiv;
-                else                op = llvm::Instruction::SDiv;
+                if(mode == NumericType::FLOAT)              op = llvm::Instruction::FDiv;
+                else if(mode == NumericType::UNSIGNEDINT)   op = llvm::Instruction::UDiv;
+                else                                        op = llvm::Instruction::SDiv;
                 break;
             }
             default: {
@@ -228,52 +229,68 @@ namespace nvyc {
         return builder.CreateBinOp(op, lhs, rhs);
     }
 
-    llvm::Value* EmissionBuilder::createLogicalOperation(NodeType type, bool isFloat, bool isUnsigned, llvm::Value* lhs, llvm::Value* rhs) {
+    llvm::Value* EmissionBuilder::createLogicalOperation(NodeType type, NumericType mode, llvm::Value* lhs, llvm::Value* rhs) {
         switch(type) {
-            case NodeType::LT:  {
-                if(isFloat)     return builder.CreateFCmpOLT(lhs, rhs);
-                if(isUnsigned)  return builder.CreateICmpULT(lhs, rhs);
-                                return builder.CreateICmpSLT(lhs, rhs);
+            case NodeType::LT: {
+                if (mode == NumericType::FLOAT)         return builder.CreateFCmpOLT(lhs, rhs);
+                if (mode == NumericType::UNSIGNEDINT)   return builder.CreateICmpULT(lhs, rhs);
+                                                        return builder.CreateICmpSLT(lhs, rhs);
             }
-            case NodeType::LTE:  {
-                if(isFloat)     return builder.CreateFCmpOLE(lhs, rhs);
-                if(isUnsigned)  return builder.CreateICmpULE(lhs, rhs);
-                                return builder.CreateICmpSLE(lhs, rhs);
+
+            case NodeType::LTE: {
+                if (mode == NumericType::FLOAT)         return builder.CreateFCmpOLE(lhs, rhs);
+                if (mode == NumericType::UNSIGNEDINT)   return builder.CreateICmpULE(lhs, rhs);
+                                                        return builder.CreateICmpSLE(lhs, rhs);
             }
-            case NodeType::GT:  {
-                if(isFloat)     return builder.CreateFCmpOGT(lhs, rhs);
-                if(isUnsigned)  return builder.CreateICmpUGT(lhs, rhs);
-                                return builder.CreateICmpSGT(lhs, rhs);
+
+            case NodeType::GT: {
+                if (mode == NumericType::FLOAT)         return builder.CreateFCmpOGT(lhs, rhs);
+                if (mode == NumericType::UNSIGNEDINT)   return builder.CreateICmpUGT(lhs, rhs);
+                                                        return builder.CreateICmpSGT(lhs, rhs);
             }
-            case NodeType::GTE:  {
-                if(isFloat)     return builder.CreateFCmpOGE(lhs, rhs);
-                if(isUnsigned)  return builder.CreateICmpUGE(lhs, rhs);
-                                return builder.CreateICmpSGE(lhs, rhs);
+
+            case NodeType::GTE: {
+                if (mode == NumericType::FLOAT)         return builder.CreateFCmpOGE(lhs, rhs);
+                if (mode == NumericType::UNSIGNEDINT)   return builder.CreateICmpUGE(lhs, rhs);
+                                                        return builder.CreateICmpSGE(lhs, rhs);
             }
+
         }
     }
 
     // Does not handle unsigned values yet
-    llvm::Value* EmissionBuilder::castNumeric(int castType, llvm::Value* value) {
+    llvm::Value* EmissionBuilder::castNumeric(CastType castType, llvm::Value* value) {
         switch(castType) {
-            case CAST_I32_I64: return builder.CreateSExt(value, builder.getInt64Ty());
-            case CAST_INT_F32: return builder.CreateSIToFP(value, builder.getFloatTy());
-            case CAST_INT_F64: return builder.CreateSIToFP(value, builder.getDoubleTy());
-            case CAST_FLOAT_I32: return builder.CreateFPToSI(value, builder.getInt32Ty());
-            case CAST_FLOAT_I64: return builder.CreateFPToSI(value, builder.getInt64Ty());
+            case CastType::I32_I64: return builder.CreateSExt(value, builder.getInt64Ty());
+            case CastType::INT_F32: return builder.CreateSIToFP(value, builder.getFloatTy());
+            case CastType::INT_F64: return builder.CreateSIToFP(value, builder.getDoubleTy());
+            case CastType::FLOAT_I32: return builder.CreateFPToSI(value, builder.getInt32Ty());
+            case CastType::FLOAT_I64: return builder.CreateFPToSI(value, builder.getInt64Ty());
             default: return nullptr; // temp fallback
         }
     }
 
-    int EmissionBuilder::getCastType(NodeType from, NodeType to) {
-        if(from == NodeType::INT32 && to == NodeType::INT64) return CAST_I32_I64;
+    EmissionBuilder::CastType EmissionBuilder::getCastType(NodeType from, NodeType to) {
+        if(from == NodeType::INT32 && to == NodeType::INT64) return CastType::I32_I64;
         if(from == NodeType::INT32 || from == NodeType::INT64) {
-            if(to == NodeType::FP32) return CAST_INT_F32;
-            else return CAST_INT_F64;
+            if(to == NodeType::FP32) return CastType::INT_F32;
+            else return CastType::INT_F64;
         }
         if(from == NodeType::FP32 || from == NodeType::FP64) {
-            if(to == NodeType::INT32) return CAST_FLOAT_I32;
-            else return CAST_FLOAT_I64;
+            if(to == NodeType::INT32) return CastType::FLOAT_I32;
+            else return CastType::FLOAT_I64;
+        }
+    }
+
+    EmissionBuilder::NumericType EmissionBuilder::getMode(NodeType type) {
+        switch(type) {
+            case NodeType::INT32:
+            case NodeType::INT64:
+                return NumericType::SIGNEDINT;
+            case NodeType::FP32:
+            case NodeType::FP64:
+                return NumericType::FLOAT;
+            default: return NumericType::SIGNEDINT;
         }
     }
 }

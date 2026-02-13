@@ -29,26 +29,28 @@ namespace nvyc {
             std::unique_ptr<llvm::Module> module;
             std::string name;
             int registerId = 0;
-            nvyc::SymbolStorage symbols;
+            SymbolStorage symbols;
 
         public:
-            static constexpr int EXPR_NOTFLOAT =    0;
-            static constexpr int EXPR_ISFLOAT =     1;
-            static constexpr int EXPR_SIGNEDINT =   0;
-            static constexpr int EXPR_UNSIGNEDINT = 1;
-
-            static constexpr int CAST_I32_I64 =     0;
-            static constexpr int CAST_INT_F32 =     1;
-            static constexpr int CAST_INT_F64 =     2;
-            static constexpr int CAST_FLOAT_I32 =   3;
-            static constexpr int CAST_FLOAT_I64 =   4;
-
+            enum class NumericType {
+                FLOAT,
+                SIGNEDINT,
+                UNSIGNEDINT
+            };
+            
+            enum class CastType {
+                I32_I64,
+                INT_F32,
+                INT_F64,
+                FLOAT_I32,
+                FLOAT_I64
+            };
 
             EmissionBuilder(const std::string& moduleName);
 
             llvm::Module* getModule();
             llvm::IRBuilder<>& getBuilder();
-            nvyc::SymbolStorage& getSymbols();
+            SymbolStorage& getSymbols();
 
             std::string getCurrentRegister();
             std::string getAndIncrementRegister();
@@ -68,10 +70,11 @@ namespace nvyc {
             NodeType arithmeticPrecedence(const NASTNode* node);
             int typeToPrecedence(NodeType type);
             NodeType precedenceToType(int precedence);
-            llvm::Value* createArithmeticOperation(NodeType type, bool isFloat, bool isSigned, llvm::Value* lhs, llvm::Value* rhs);
-            llvm::Value* createLogicalOperation(NodeType type, bool isFloat, bool isUnsigned, llvm::Value* lhs, llvm::Value* rhs);
-            llvm::Value* castNumeric(int castType, llvm::Value* value);
-            int getCastType(NodeType from, NodeType to);
+            llvm::Value* createArithmeticOperation(NodeType type, NumericType mode, llvm::Value* lhs, llvm::Value* rhs);
+            llvm::Value* createLogicalOperation(NodeType type, NumericType mode, llvm::Value* lhs, llvm::Value* rhs);
+            llvm::Value* castNumeric(CastType castType, llvm::Value* value);
+            CastType getCastType(NodeType from, NodeType to);
+            NumericType getMode(NodeType type);
 
             llvm::FunctionType* buildFunction(std::vector<llvm::Type*> args, NodeType type, bool isVariadic);
             void addReturnValue(llvm::BasicBlock* block, llvm::Value* rv);

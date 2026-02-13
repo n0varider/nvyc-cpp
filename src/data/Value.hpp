@@ -37,7 +37,7 @@ namespace nvyc {
                 case NodeType::INT64: return std::to_string(i64);
                 case NodeType::FP32: return std::to_string(f32);
                 case NodeType::FP64: return std::to_string(f64);
-                case NodeType::TYPE: return nvyc::symbols::nodeTypeToString(ty);
+                case NodeType::TYPE: return symbols::nodeTypeToString(ty);
                 default: return "unknown";
             }
             return "unknown";
