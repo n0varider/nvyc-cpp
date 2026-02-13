@@ -140,14 +140,25 @@ namespace nvyc {
     }
 
     llvm::Value* compileExpression(EmissionBuilder* mod, const NASTNode* node, int exprType) {
-        NodeType op = node->getType();
+        NodeType nodeType = node->getType();
 
-        bool isArith = symbols::ARITH_SYMBOLS.count(op);
-        bool isLogic = symbols::LOGIC_SYMBOLS.count(op);
+        bool isArith = symbols::ARITH_SYMBOLS.count(nodeType);
+        bool isLogic = symbols::LOGIC_SYMBOLS.count(nodeType);
+
+        if(symbols::LITERAL_SYMBOLS.count(nodeType)) {
+            return getValue(mod, nodeType, node->getData());
+        }
+
+        // Load variable
+        else if(nodeType == NodeType::VARIABLE) {
+            const std::string varName = node->getData().str;
+            NodeType varType = mod->getSymbols().getVarType(varName);
+            return mod->getBuilder().CreateLoad(mod->getNativeType(varType), mod->getSymbols().getAlloca(varName));
+        }
 
         // Arithmetic & Logical ops
-        if(isArith || isLogic) {
-
+        else if(isArith || isLogic) {
+            NodeType op = nodeType;
             NodeType resultType = mod->arithmeticPrecedence(node);
 
             // In order of LHS, RHS
@@ -197,22 +208,8 @@ namespace nvyc {
         const NASTNode* returnValue = node->getSubnode(0);
         NodeType type = returnValue->getType();
 
-        llvm::Value* value = nullptr;
-
-        // Ideally, compileExpression should handle almost everything
-
-        if(type == NodeType::VARIABLE) {
-            std::string variable = returnValue->getData().str;
-            type = mod->getSymbols().getVarType(variable);
-            value = mod->getBuilder().CreateLoad(mod->getNativeType(type), mod->getSymbols().getAlloca(variable));
-            return mod->getBuilder().CreateRet(value);
-        } 
-
-        else if(symbols::LITERAL_SYMBOLS.count(type)) {
-            value = getValue(mod, type, returnValue->getData());
-            return mod->getBuilder().CreateRet(value);
-        }
-        
+        llvm::Value* value = compileExpression(mod, returnValue, 0);
+        return mod->getBuilder().CreateRet(value);
     }
 
 }
