@@ -32,10 +32,17 @@ namespace nvyc {
             nvyc::SymbolStorage symbols;
 
         public:
-            static constexpr int EXPR_NOTFLOAT = 0;
-            static constexpr int EXPR_ISFLOAT = 1;
-            static constexpr int EXPR_SIGNEDINT = 0;
+            static constexpr int EXPR_NOTFLOAT =    0;
+            static constexpr int EXPR_ISFLOAT =     1;
+            static constexpr int EXPR_SIGNEDINT =   0;
             static constexpr int EXPR_UNSIGNEDINT = 1;
+
+            static constexpr int CAST_I32_I64 =     0;
+            static constexpr int CAST_INT_F32 =     1;
+            static constexpr int CAST_INT_F64 =     2;
+            static constexpr int CAST_FLOAT_I32 =   3;
+            static constexpr int CAST_FLOAT_I64 =   4;
+
 
             EmissionBuilder(const std::string& moduleName);
 
@@ -63,6 +70,8 @@ namespace nvyc {
             NodeType precedenceToType(int precedence);
             llvm::Value* createArithmeticOperation(NodeType type, bool isFloat, bool isSigned, llvm::Value* lhs, llvm::Value* rhs);
             llvm::Value* createLogicalOperation(NodeType type, bool isFloat, bool isUnsigned, llvm::Value* lhs, llvm::Value* rhs);
+            llvm::Value* castNumeric(int castType, llvm::Value* value);
+            int getCastType(NodeType from, NodeType to);
 
             llvm::FunctionType* buildFunction(std::vector<llvm::Type*> args, NodeType type, bool isVariadic);
             void addReturnValue(llvm::BasicBlock* block, llvm::Value* rv);

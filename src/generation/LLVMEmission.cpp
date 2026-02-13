@@ -139,9 +139,14 @@ namespace nvyc {
     llvm::Value* compileExpression(nvyc::EmissionBuilder* mod, const NASTNode* node, int exprType) {
         NodeType op = node->getType();
 
+        bool isArith = nvyc::symbols::ARITH_SYMBOLS.count(op);
+        bool isLogic = nvyc::symbols::LOGIC_SYMBOLS.count(op);
+
         // Arithmetic & Logical ops
-        if(nvyc::symbols::ARITH_SYMBOLS.count(op) || nvyc::symbols::LOGIC_SYMBOLS.count(op)) {
-            
+        if(isArith || isLogic) {
+
+            NodeType resultType = mod->arithmeticPrecedence(node);
+
             // In order of LHS, RHS
             llvm::Value* values[2];
             const NASTNode* operands[2] = {node->getSubnode(0), node->getSubnode(1)};
@@ -157,6 +162,7 @@ namespace nvyc {
                 if(sideType == NodeType::VARIABLE) {
                     sideValue = mod->getSymbols().getAlloca(sideVariable);
                     sideType = mod->getSymbols().getVarType(sideVariable);
+                    types[i] = sideType;
                     values[i] = mod->getBuilder().CreateLoad(mod->getNativeType(sideType), sideValue);
                 }
                 
@@ -167,9 +173,18 @@ namespace nvyc {
                 else {
                     values[i] = compileExpression(mod, operands[i], exprType);
                 }
+
+                // Logic for promotion/demotion
+                if(types[i] != resultType) {
+                    int castType = mod->getCastType(types[i], resultType);
+                    nvyc::debug("CAST TYPE: " + castType);
+                    values[i] = mod->castNumeric(castType, values[i]);
+                }
+
             }
 
-            return mod->createArithmeticOperation(op, mod->EXPR_NOTFLOAT, mod->EXPR_SIGNEDINT, values[0], values[1]);
+            if(isArith)      return mod->createArithmeticOperation(op, mod->EXPR_NOTFLOAT, mod->EXPR_SIGNEDINT, values[0], values[1]);
+            else if(isLogic) return mod->createLogicalOperation(op, mod->EXPR_NOTFLOAT, mod->EXPR_SIGNEDINT, values[0], values[1]);
         }
     
     }

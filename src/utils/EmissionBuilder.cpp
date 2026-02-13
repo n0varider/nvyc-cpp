@@ -252,4 +252,28 @@ namespace nvyc {
             }
         }
     }
+
+    // Does not handle unsigned values yet
+    llvm::Value* EmissionBuilder::castNumeric(int castType, llvm::Value* value) {
+        switch(castType) {
+            case CAST_I32_I64: return builder.CreateSExt(value, builder.getInt64Ty());
+            case CAST_INT_F32: return builder.CreateSIToFP(value, builder.getFloatTy());
+            case CAST_INT_F64: return builder.CreateSIToFP(value, builder.getDoubleTy());
+            case CAST_FLOAT_I32: return builder.CreateFPToSI(value, builder.getInt32Ty());
+            case CAST_FLOAT_I64: return builder.CreateFPToSI(value, builder.getInt64Ty());
+            default: return nullptr; // temp fallback
+        }
+    }
+
+    int EmissionBuilder::getCastType(NodeType from, NodeType to) {
+        if(from == NodeType::INT32 && to == NodeType::INT64) return CAST_I32_I64;
+        if(from == NodeType::INT32 || from == NodeType::INT64) {
+            if(to == NodeType::FP32) return CAST_INT_F32;
+            else return CAST_INT_F64;
+        }
+        if(from == NodeType::FP32 || from == NodeType::FP64) {
+            if(to == NodeType::INT32) return CAST_FLOAT_I32;
+            else return CAST_FLOAT_I64;
+        }
+    }
 }
