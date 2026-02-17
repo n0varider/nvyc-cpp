@@ -3,6 +3,7 @@
 #include "data/NodeType.hpp"
 #include <unordered_map>
 #include <string>
+#include <utility>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Function.h>
 
@@ -14,8 +15,10 @@ namespace nvyc {
     private:
         std::unordered_map<std::string, llvm::Value*> variableAlloca;
         std::unordered_map<std::string, llvm::Function*> functionData;
-        std::unordered_map<std::string, NodeType> variableTypes;
+        std::unordered_map<std::string, std::pair<NodeType, llvm::Type*>> variableTypes;
         std::unordered_map<std::string, NodeType> functionTypes;
+
+        std::pair<NodeType, llvm::Type*> makePair(NodeType type, llvm::Type* ty);
         
     public:
         SymbolStorage() {}
@@ -23,8 +26,9 @@ namespace nvyc {
         llvm::Value* getAlloca(const std::string& variable);
         void storeAlloca(const std::string variable, llvm::Value* value);
 
-        NodeType getVarType(const std::string& variable);
-        void storeVarType(const std::string variable, NodeType type);
+        NodeType getVarNvyType(const std::string& variable);
+        llvm::Type* getVarNativeType(const std::string& variable);
+        void storeVarType(const std::string variable, NodeType type, llvm::Type* ty);
 
         NodeType getFunType(const std::string& func);
         void storeFunType(const std::string func, NodeType type);

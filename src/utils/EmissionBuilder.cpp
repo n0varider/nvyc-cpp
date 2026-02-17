@@ -107,13 +107,14 @@ namespace nvyc {
     }
 
     llvm::Value* EmissionBuilder::createVariable(const std::string name, NodeType type) {
+        auto nativeType = getNativeType(type);
         auto alloca = builder.CreateAlloca(
-            getNativeType(type),
+            nativeType,
             nullptr,
             name
         );
         getSymbols().storeAlloca(name, alloca);
-        getSymbols().storeVarType(name, type);
+        getSymbols().storeVarType(name, type, nativeType);
         return alloca;
     }
 
@@ -148,7 +149,7 @@ namespace nvyc {
         if(node->getSubnodes().empty()) {
             if(symbols::LITERAL_SYMBOLS.count(type)) return type;
             if(type == NodeType::FUNCTIONCALL) return getSymbols().getFunType(node->getData().str);
-            return getSymbols().getVarType(node->getData().str);
+            return getSymbols().getVarNvyType(node->getData().str);
         }
 
         // Struct access

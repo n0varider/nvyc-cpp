@@ -97,7 +97,7 @@ namespace nvyc {
             }
             case NodeType::VARIABLE: {
                 std::string var = v.str;
-                NodeType otherType = mod->getSymbols().getVarType(var);
+                NodeType otherType = mod->getSymbols().getVarNvyType(var);
                 val = mod->getBuilder().CreateLoad(mod->getNativeType(otherType), mod->getSymbols().getAlloca(var), var + "_val");
                 break;
             }
@@ -124,7 +124,7 @@ namespace nvyc {
         NodeType type = varValue->getType();
 
         llvm::Value* val = compileExpression(mod, varValue, 0);
-        llvm::Value* var = mod->createVariable(name, mod->getNvyType(val->getType()));
+        llvm::Value* var = mod->createVariable(name, mod->getResultType());
 
         mod->storeToVariable(var, val);
     }
@@ -142,8 +142,8 @@ namespace nvyc {
         // Load variable
         else if(nodeType == NodeType::VARIABLE) {
             const std::string varName = node->getData().str;
-            NodeType varType = mod->getSymbols().getVarType(varName);
-            return mod->getBuilder().CreateLoad(mod->getNativeType(varType), mod->getSymbols().getAlloca(varName));
+            llvm::Type* varType = mod->getSymbols().getVarNativeType(varName);
+            return mod->getBuilder().CreateLoad(varType, mod->getSymbols().getAlloca(varName));
         }
 
         // Arithmetic & Logical ops
@@ -165,7 +165,7 @@ namespace nvyc {
 
                 if(sideType == NodeType::VARIABLE) {
                     sideValue = mod->getSymbols().getAlloca(sideVariable);
-                    sideType = mod->getSymbols().getVarType(sideVariable);
+                    sideType = mod->getSymbols().getVarNvyType(sideVariable);
                     types[i] = sideType;
                     values[i] = mod->getBuilder().CreateLoad(mod->getNativeType(sideType), sideValue);
                 }
@@ -187,6 +187,7 @@ namespace nvyc {
             }
 
             NumericType mode = mod->getMode(resultType);
+            mod->setResultType(resultType);
 
             if(isArith)      return mod->createArithmeticOperation(op, mode, values[0], values[1]);
             else if(isLogic) return mod->createLogicalOperation(op, mode, values[0], values[1]);

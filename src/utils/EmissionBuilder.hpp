@@ -30,6 +30,7 @@ namespace nvyc {
             std::string name;
             int registerId = 0;
             SymbolStorage symbols;
+            NodeType lastType;
 
         public:
             enum class NumericType {
@@ -85,6 +86,14 @@ namespace nvyc {
             llvm::Type* getNativeType(NodeType type);
             void addConstReturnValue(llvm::BasicBlock* block, int i);
             void storeToVariable(llvm::Value* variable, llvm::Value* value);
+
+            inline NodeType getResultType() {
+                return lastType;
+            }
+
+            inline void setResultType(NodeType type) {
+                lastType = type;
+            }
 
             // Replacement for getValue() in LLVMEmission
             /*
