@@ -293,4 +293,13 @@ namespace nvyc {
             default: return NumericType::SIGNEDINT;
         }
     }
+
+    // Conversion from int32*, string, etc pointers to PointerTy is lossy, so can't reverse without lookup table
+    // Perhaps store both the native type and nvy type in a map
+    NodeType EmissionBuilder::getNvyType(llvm::Type* type) {
+        if(type->isIntegerTy(32))   return NodeType::INT32;
+        if(type->isIntegerTy(64))   return NodeType::INT64;
+        if(type->isFloatTy())       return NodeType::FP32;
+        if(type->isDoubleTy())      return NodeType::FP64;
+    }
 }

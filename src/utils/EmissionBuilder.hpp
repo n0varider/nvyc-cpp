@@ -80,6 +80,7 @@ namespace nvyc {
             void addReturnValue(llvm::BasicBlock* block, llvm::Value* rv);
             llvm::BasicBlock* createBlock(llvm::Function* func, const std::string name);
             llvm::Value* createVariable(const std::string name, NodeType type);
+            NodeType getNvyType(llvm::Type* type);
             void setInsertionPoint(llvm::BasicBlock* block);
             llvm::Type* getNativeType(NodeType type);
             void addConstReturnValue(llvm::BasicBlock* block, int i);

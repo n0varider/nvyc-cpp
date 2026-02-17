@@ -120,22 +120,12 @@ namespace nvyc {
     */
     void compileVardef(EmissionBuilder* mod, const NASTNode* node) {
         std::string name = node->getData().str;
-        NodeType type = node->getSubnode(0)->getType();
+        const NASTNode* varValue = node->getSubnode(0);
+        NodeType type = varValue->getType();
 
-        llvm::Value* var;
-        llvm::Value* val;
+        llvm::Value* val = compileExpression(mod, varValue, 0);
+        llvm::Value* var = mod->createVariable(name, mod->getNvyType(val->getType()));
 
-        if(symbols::LITERAL_SYMBOLS.count(type) || type == NodeType::VARIABLE) {
-            var = mod->createVariable(name, type);
-            val = getValue(mod, type, node->getSubnode(0)->getData());
-        }
-        
-        else if (symbols::ARITH_SYMBOLS.count(type)) {
-            type = mod->arithmeticPrecedence(node);
-            var = mod->createVariable(name, type);
-            val = compileExpression(mod, node->getSubnode(0), 0);
-            
-        }
         mod->storeToVariable(var, val);
     }
 
