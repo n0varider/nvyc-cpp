@@ -136,6 +136,7 @@ namespace nvyc {
         bool isLogic = symbols::LOGIC_SYMBOLS.count(nodeType);
 
         if(symbols::LITERAL_SYMBOLS.count(nodeType)) {
+            mod->setResultType(nodeType);
             return getValue(mod, nodeType, node->getData());
         }
 
@@ -143,6 +144,7 @@ namespace nvyc {
         else if(nodeType == NodeType::VARIABLE) {
             const std::string varName = node->getData().str;
             llvm::Type* varType = mod->getSymbols().getVarNativeType(varName);
+            mod->setResultType(mod->getSymbols().getVarNvyType(varName));
             return mod->getBuilder().CreateLoad(varType, mod->getSymbols().getAlloca(varName));
         }
 
