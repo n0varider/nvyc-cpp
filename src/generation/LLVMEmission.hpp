@@ -25,7 +25,7 @@ namespace nvyc {
     void compileForLoop(std::unique_ptr<NASTNode> node);
     void compileWhileLoop(std::unique_ptr<NASTNode> node);
     
-    llvm::Value* compileExpression(EmissionBuilder* mod, const NASTNode* node, int exprType);
+    llvm::Value* compileExpression(EmissionBuilder* mod, const NASTNode* node, int exprType, EmissionBuilder::ResultType* result);
     llvm::Value* compileReturn(EmissionBuilder* mod, const NASTNode* node);
 
     // Utility

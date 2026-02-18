@@ -30,7 +30,6 @@ namespace nvyc {
             std::string name;
             int registerId = 0;
             SymbolStorage symbols;
-            NodeType lastType;
 
         public:
             enum class NumericType {
@@ -45,6 +44,11 @@ namespace nvyc {
                 INT_F64,
                 FLOAT_I32,
                 FLOAT_I64
+            };
+
+            struct ResultType {
+                NodeType nvyType;
+                llvm::Type* llvmType;
             };
 
             EmissionBuilder(const std::string& moduleName);
@@ -77,23 +81,17 @@ namespace nvyc {
             CastType getCastType(NodeType from, NodeType to);
             NumericType getMode(NodeType type);
 
+            void populateType(ResultType* result, NodeType type, llvm::Type* ty);
+
             llvm::FunctionType* buildFunction(std::vector<llvm::Type*> args, NodeType type, bool isVariadic);
             void addReturnValue(llvm::BasicBlock* block, llvm::Value* rv);
             llvm::BasicBlock* createBlock(llvm::Function* func, const std::string name);
-            llvm::Value* createVariable(const std::string name, NodeType type);
+            llvm::Value* createVariable(const std::string name, ResultType& type);
             NodeType getNvyType(llvm::Type* type);
             void setInsertionPoint(llvm::BasicBlock* block);
             llvm::Type* getNativeType(NodeType type);
             void addConstReturnValue(llvm::BasicBlock* block, int i);
             void storeToVariable(llvm::Value* variable, llvm::Value* value);
-
-            inline NodeType getResultType() {
-                return lastType;
-            }
-
-            inline void setResultType(NodeType type) {
-                lastType = type;
-            }
 
             // Replacement for getValue() in LLVMEmission
             /*

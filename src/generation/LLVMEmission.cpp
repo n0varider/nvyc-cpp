@@ -1,5 +1,6 @@
 #include "LLVMEmission.hpp"
 #include "utils/EmissionBuilder.hpp"
+#include "error/Error.hpp"
 #include <unordered_map>
 #include <cstdint>
 #include <llvm/IR/Module.h>
@@ -7,6 +8,7 @@
 
 using CastType = nvyc::EmissionBuilder::CastType;
 using NumericType = nvyc::EmissionBuilder::NumericType;
+using ResultType = nvyc::EmissionBuilder::ResultType;
 
 namespace nvyc {
 
@@ -31,9 +33,6 @@ namespace nvyc {
                 break;
             case NodeType::VARDEF:
                 compileVardef(mod, node);
-                break;
-            case NodeType::ADD:
-                compileExpression(mod, node, 0);
                 break;
             case NodeType::RETURN:
                 compileReturn(mod, node);
@@ -101,6 +100,9 @@ namespace nvyc {
                 val = mod->getBuilder().CreateLoad(mod->getNativeType(otherType), mod->getSymbols().getAlloca(var), var + "_val");
                 break;
             }
+            default: {
+                Error::nvyerr_failcompile(2, "Attempted to get value of invalid node type: " + symbols::nodeTypeToString(type));
+            }
         }
 
         return val;
@@ -123,20 +125,21 @@ namespace nvyc {
         const NASTNode* varValue = node->getSubnode(0);
         NodeType type = varValue->getType();
 
-        llvm::Value* val = compileExpression(mod, varValue, 0);
-        llvm::Value* var = mod->createVariable(name, mod->getResultType());
+        ResultType resultType;
+        llvm::Value* val = compileExpression(mod, varValue, 0, &resultType);
+        llvm::Value* var = mod->createVariable(name, resultType);
 
         mod->storeToVariable(var, val);
     }
 
-    llvm::Value* compileExpression(EmissionBuilder* mod, const NASTNode* node, int exprType) {
+    llvm::Value* compileExpression(EmissionBuilder* mod, const NASTNode* node, int exprType, ResultType* result) {
         NodeType nodeType = node->getType();
 
         bool isArith = symbols::ARITH_SYMBOLS.count(nodeType);
         bool isLogic = symbols::LOGIC_SYMBOLS.count(nodeType);
 
         if(symbols::LITERAL_SYMBOLS.count(nodeType)) {
-            mod->setResultType(nodeType);
+            mod->populateType(result, nodeType, mod->getNativeType(nodeType));
             return getValue(mod, nodeType, node->getData());
         }
 
@@ -144,7 +147,7 @@ namespace nvyc {
         else if(nodeType == NodeType::VARIABLE) {
             const std::string varName = node->getData().str;
             llvm::Type* varType = mod->getSymbols().getVarNativeType(varName);
-            mod->setResultType(mod->getSymbols().getVarNvyType(varName));
+            mod->populateType(result, nodeType, mod->getNativeType(nodeType));
             return mod->getBuilder().CreateLoad(varType, mod->getSymbols().getAlloca(varName));
         }
 
@@ -177,7 +180,7 @@ namespace nvyc {
                 }
 
                 else {
-                    values[i] = compileExpression(mod, operands[i], exprType);
+                    values[i] = compileExpression(mod, operands[i], exprType, nullptr);
                 }
 
                 // Logic for promotion/demotion
@@ -189,19 +192,20 @@ namespace nvyc {
             }
 
             NumericType mode = mod->getMode(resultType);
-            mod->setResultType(resultType);
+            mod->populateType(result, resultType, mod->getNativeType(resultType));
 
             if(isArith)      return mod->createArithmeticOperation(op, mode, values[0], values[1]);
             else if(isLogic) return mod->createLogicalOperation(op, mode, values[0], values[1]);
         }
     
+        return nullptr;
     }
 
     llvm::Value* compileReturn(EmissionBuilder* mod, const NASTNode* node) {
         const NASTNode* returnValue = node->getSubnode(0);
         NodeType type = returnValue->getType();
 
-        llvm::Value* value = compileExpression(mod, returnValue, 0);
+        llvm::Value* value = compileExpression(mod, returnValue, 0, nullptr);
         return mod->getBuilder().CreateRet(value);
     }
 

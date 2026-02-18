@@ -1,4 +1,5 @@
 #include "EmissionBuilder.hpp"
+#include "error/Error.hpp"
 
 namespace nvyc {
 
@@ -106,15 +107,14 @@ namespace nvyc {
 
     }
 
-    llvm::Value* EmissionBuilder::createVariable(const std::string name, NodeType type) {
-        auto nativeType = getNativeType(type);
+    llvm::Value* EmissionBuilder::createVariable(const std::string name, ResultType& type) {
         auto alloca = builder.CreateAlloca(
-            nativeType,
+            type.llvmType,
             nullptr,
             name
         );
         getSymbols().storeAlloca(name, alloca);
-        getSymbols().storeVarType(name, type, nativeType);
+        getSymbols().storeVarType(name, type.nvyType, type.llvmType);
         return alloca;
     }
 
@@ -139,6 +139,8 @@ namespace nvyc {
             case NodeType::STR:
             case NodeType::STR_T:
                 return builder.getPtrTy();
+            default:
+                Error::nvyerr_failcompile(2, "Cannot get native type for " + symbols::nodeTypeToString(type));
         }
     }
 
@@ -255,7 +257,10 @@ namespace nvyc {
                 if (mode == NumericType::UNSIGNEDINT)   return builder.CreateICmpUGE(lhs, rhs);
                                                         return builder.CreateICmpSGE(lhs, rhs);
             }
-
+            default: {
+                Error::nvyerr_failcompile(2, "Invalid logic branch type: " + symbols::nodeTypeToString(type));
+                return nullptr;
+            }
         }
     }
 
@@ -302,5 +307,13 @@ namespace nvyc {
         if(type->isIntegerTy(64))   return NodeType::INT64;
         if(type->isFloatTy())       return NodeType::FP32;
         if(type->isDoubleTy())      return NodeType::FP64;
+        return NodeType::INVALID;
+    }
+
+    void EmissionBuilder::populateType(ResultType* result, NodeType type, llvm::Type* ty) {
+        if(result) {
+            result->nvyType = type;
+            result->llvmType = ty;
+        }
     }
 }
