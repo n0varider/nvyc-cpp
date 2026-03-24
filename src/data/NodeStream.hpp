@@ -1,228 +1,198 @@
 #pragma once
 
-#include "NodeType.hpp"
-#include "Symbols.hpp"
-#include "Value.hpp"
-#include <cstdint>
+#include "data/NodeType.hpp"
+#include "data/Symbols.hpp"
+#include "data/Value.hpp"
+#include "error/Error.hpp"
+#include <cstddef>
 #include <functional>
 #include <stdexcept>
 #include <string>
 #include <sstream>
+#include <iostream>
 
 namespace nvyc {
 
-class NodeStream {
-private:
-	Value dptr;
-	//void* dptr = nullptr;
-	NodeType type = NodeType::INVALID;
-	bool owned = true;
-	NodeStream* next = nullptr;
-	NodeStream* prev = nullptr;
+    class NodeStream {
+        private:
+            struct Token {
+                Value val;
+                NodeType type;
 
-public:
+                Token(Value v, NodeType ty) : type(ty), val(v) {}
 
-	static constexpr int CUT_FORWARD = 1;
-	static constexpr int CUT_BACKWARD = -1;
+                Value getValue() {
+                    return val;
+                }
 
-	NodeStream(NodeType type, Value v, bool owned = true)
-	: dptr(v), type(type), owned(owned) {}
+                NodeType getType() {
+                    return type;
+                }
+            };
 
-	~NodeStream() = default;
+            std::vector<Token> tokens;
+            size_t idx = 0;
 
-	Value getData() const {
-		return dptr;
-	}
+            struct StreamCursor {
+                const std::vector<Token>& tok_ref;
+                size_t idx_it = 0;
+                const size_t idx_origin = 0; // Cursor spawned here
+                size_t intermediate = 0;
 
-	void setData(Value v) {
-		dptr = v;
-	}
+                StreamCursor(const std::vector<Token>& tok, size_t it) 
+                : tok_ref(tok), idx_it(it), idx_origin(it) {}
 
-	// Get NodeType
-	NodeType getType() const {
-		return type;
-	}
+                StreamCursor& next() {
+                    idx_it++;
+                    return *this;
+                }
 
-	// Set NodeType
-	void setType(NodeType t) {
-		type = t;
-	}
+                size_t distMoved() {
+                    return idx_it - idx_origin;
+                }
 
-	// Check if data is owned to know if it can be deleted
-	bool isOwned() const {
-		return owned;
-	}
+                bool validNext() {
+                    return (idx_it + 1) < tok_ref.size(); 
+                }
 
-	// Sets the current node as the stream tail
-	void cutTail() {
-		cut(next, CUT_FORWARD);
-		next = nullptr;
-	}
+                bool validPrev() {
+                    return idx_it != 0;
+                }
 
-	// Sets the current node as the stream head
-	void cutHead() {
-		cut(prev, CUT_BACKWARD);
-		prev = nullptr;
-	}
+                StreamCursor& prev() {
+                    idx_it--;
+                    return *this;
+                }
 
-	// Helper function for cutTail and cutHead
-	// Frees previous/next nodes
-	void cut(NodeStream* stream, int direction) {
-		NodeStream* current = stream;
-		while(current) {
-			NodeStream* tmp;
-			if(direction == CUT_FORWARD) tmp = current->next;
-			else if(direction == CUT_BACKWARD) tmp = current->prev;
-			else throw std::runtime_error("<cut> direction must be 1 or -1");
+                void forward(int i) {
+                    idx_it += i;
+                }
 
-			//current->free();
-			delete current;
-			current = tmp;
-		}
-	}
+                void backward(int i) {
+                    idx_it -= i;
+                }
 
-	// Set next node
-	void setNext(NodeStream* stream) {
-		next = stream;
-		if(stream) {
-			stream->prev = this;
-		}
-	}
+                StreamCursor& transient(int i) {
+                    intermediate = idx_it + i;
+                    return *this;
+                }
 
-	// Set prev node
-	void setPrev(NodeStream* stream) {
-		prev = stream;
-		if(stream) {
-			stream->next = this;
-		}
-	}
+                Token getTransient() {
+                    Token t = tok_ref[intermediate];
+                    intermediate = 0;
+                    return t;
+                }
 
-	// Get the next node
-	NodeStream* getNext() {
-		return next;
-	}
+                Token get() {
+                    if(idx_it < 0 || idx_it > tok_ref.size()) {
+                        nvyc::Error::nvyerr_failcompile(1, "Attempted to access token out of bounds");
+                    }
+                    return tok_ref[idx_it];
+                }
+                
+                StreamCursor spawn() {
+                    return StreamCursor(tok_ref, idx_it)
+                }
+            };
 
-	// Get previous node
-	NodeStream* getPrev() {
-		return prev;
-	}
+        public:
+            NodeStream() {}
 
-	// Delete current node
-	void remove() {
-		if(prev) prev->next = next;
-		if(next) next->prev = prev;
+            void addNode(NodeType type, Value val) {
+                tokens.push_back(Token(val, type));
+            }
 
-		prev = nullptr;
-		next = nullptr;
+            Value getValue(int i = -1) const {
+                if(i < 0) i = idx;
+                return tokens[i].val;
+            }
 
-		delete this;
-	}
+            NodeType getType(int i = -1) const {
+                if(i < 0) i = idx;
+                return tokens[i].type;
+            }
 
-	// Move until start of stream
-	NodeStream* backtrack() {
-		NodeStream* current = this;
-		while(current->prev) {
-			current = current->prev;
-		}
-		return current;
-	}
+            Token getToken(int i = -1) const {
+                if(i < 0) i = idx;
+                return tokens[i];
+            }
 
-	// Move forward until a matching type
-	NodeStream* forwardType(NodeType t) {
-		NodeStream* current = this;
-		while(current && current->type != t) {
-			current = current->next;
-		}
-		return current;
-	}
+            Token getNext() {
+                return tokens[idx + 1];
+            }
 
-	NodeStream* forward(int dist) {
-		NodeStream* current = this;
-		for(int i = 0; i < dist; i++) {
-			if(current) current = current->getNext();
-		}
-		return current;
-	}
+            Token getPrev() {
+                return tokens[idx - 1];
+            } 
 
-	NodeStream* backward(int dist) {
-		NodeStream* current = this;
-		for(int i = 0; i < dist; i++) {
-			if(current) current = current->getPrev();
-		}
-		return current;
-	}
+            Token getForward(int dist) {
+                if((idx + dist) > tokens.size()) nvyc::Error::nvyerr_out("Out of bounds access for NodeStream::getForward");
+                return tokens[idx + dist];
+            }
 
-	NodeStream* get() {
-		return this;
-	}
+            Token getBackward(int dist) {
+                int traverse = idx - dist;
+                if(traverse < 0 || traverse > tokens.size()) nvyc::Error::nvyerr_out("Out of bounds access for NodeStream::getBackward");
+                return tokens[idx - dist];
+            }
 
-	// Creates copy from current node onward
-	NodeStream* forwardCopy() const {
-		NodeStream* head = const_cast<NodeStream*>(this);
+            Token createToken(NodeType ty, Value v) {
+                return Token(v, ty);
+            }
 
-		NodeStream* copy = new NodeStream(head->getType(), head->getData());
-		while((head = head->getNext())) {
-			copy->setNext(new NodeStream(head->getType(), head->getData()));
-			copy = copy->getNext();
-		}
+            int size() const {
+                return tokens.size();
+            }
 
-		return copy->backtrack();
-	}
+            void setToken(Token tok, int idx) {
+                tokens[idx] = tok;
+            }
 
-	NodeStream* backwardCopy() const {
-		NodeStream* head = const_cast<NodeStream*>(this);
-		int depth = 0;
-		NodeStream* copy = new NodeStream(head->getType(), head->getData());
-		while((head = head->getPrev())) {
-			copy->setPrev(new NodeStream(head->getType(), head->getData()));
-			copy = copy->getPrev();
-			depth++;
-		}
+            void delTokens(int idx, int idy) {
+                int i = idx;
+                while(i < idy) {
+                    tokens.erase(tokens.begin() + idx);
+                    i++;
+                }
+            }
 
-		return copy->forward(depth);
-	}
+            void insertToken(Token tok, int idx) {
+                tokens.insert(tokens.begin() + idx, tok);
+            }
 
-	// Creates deep copy of stream and automatically moves to node it was copied at
-	NodeStream* deepCopy() const {
-		int dist = 0;
+            void backward(int limit = -1) {
+                if(limit < 0 || limit > tokens.size()) idx = 0;
+                else idx -= limit;
+            }
 
-		// Get distance to head
-		NodeStream* head = const_cast<NodeStream*>(this);
-		while(head->getPrev()) {
-			head = head->getPrev();
-			dist++;
-		}
+            void forward(int dist) {
+                idx += dist;
+            }
 
+            void moveTo(int i) {
+                idx = i;
+            }
 
-		NodeStream* copy = new NodeStream(head->getType(), head->getData());
-		while((head = head->getNext())) {
-			copy->setNext(new NodeStream(head->getType(), head->getData()));
-			copy = copy->getNext();
-		}
+            void forwardType(NodeType type) {
+                int size = tokens.size();
+                while(idx < size && tokens[idx].type != type) {
+                    idx++;
+                }
+            }
 
-		copy = copy->forward(dist);
-		return copy;
-	}
+            StreamCursor iterator() const {
+                StreamCursor it(tokens, idx);
+                return it;
+            }
 
-	int length() const {
-		NodeStream* head = const_cast<NodeStream*>(this);
-		head = head->backtrack();
-		
-		int length = 0;
-		while(head) {
-			length++;
-			head = head->getNext();
-		}
+    }; // NodeStream
 
-		return length;
-	}
-
-	std::string asString() {
-		std::ostringstream oss;
-		//oss << "NodeStream(" << nvyc::symbols::nodeTypeToString(type) << ", " << nvyc::symbols::getStringValue(type, dptr) << ")";
-		oss << "NodeStream(" << symbols::nodeTypeToString(type) << ", " << dptr.asString() << ")";
-		return oss.str();
-	}
-}; // NodeStream
+    std::ostream& operator<<(std::ostream& os, const NodeStream& stream) {
+        for(int i = 0; i < stream.size(); i++) {
+            os << "Trying idx " << i << std::endl;
+            os << "NodeStream(" << symbols::nodeTypeToString(stream.getType(i)) << ", " << stream.getValue(i).asString() << ")";
+        }
+        return os;
+    }
 
 } // namespace nvyc
