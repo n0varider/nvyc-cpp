@@ -47,6 +47,10 @@ const std::unordered_set<std::string> OPERATORS = {
     "->"
 };
 
+const std::unordered_set<char> NUMERIC_QUALIFIERS = {
+    'f', 'F', 'd', 'D', 'L', 'U'
+};
+
 
 nvyc::Lexer& nvyc::Lexer::getInstance() {
     static Lexer instance;
@@ -317,7 +321,7 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
                 char currentChar = line[j];
                 std::string number;
 
-                while(isdigit(currentChar)) {
+                while(isdigit(currentChar) || currentChar == '.' || NUMERIC_QUALIFIERS.count(currentChar)) {
                     number += currentChar;
                     j++;
                     currentChar = line[j];
