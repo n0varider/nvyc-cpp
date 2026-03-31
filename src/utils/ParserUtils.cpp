@@ -44,23 +44,26 @@ namespace nvyc::ParserUtils {
         node.getSubnode(bodyIndex)->addSubnode(std::move(bodyNode));
     }
 
-    NodeStream* moveToMatchingDelimiter(NodeStream& stream, NodeType open, NodeType close) {
+    int moveToMatchingDelimiter(NodeStream& stream, NodeType open, NodeType close) {
         std::stack<int> stack;
-        auto streamptr = &stream;
+        auto it = stream.iterator();
         NodeType type;
         stack.push(1);
+        size_t distance = 0;
 
-        while(!stack.empty() && streamptr) {
-            type = streamptr->getType();
+        while(!stack.empty() && it.validNext()) {
+            auto tok = it.get();
+            type = tok.getType();
 
             if(type == open) stack.push(1);
             else if(type == close) stack.pop();
 
-            streamptr = streamptr->getNext();
+            distance++;
+            it.next();
         
         }
 
-        return streamptr;
+        return distance;
     }
 
 
@@ -289,20 +292,21 @@ namespace nvyc::ParserUtils {
     int getDepth(NodeStream& stream, NodeType open, NodeType close) {
         std::stack<int> braces;
         NodeType type;
-        NodeStream* streamptr = &stream;
-        streamptr = streamptr->getNext()->getNext();
+        auto it = stream.iterator();
+        it.forward(2);
         int depth = 2;
 
         braces.push(1);
 
         while(!braces.empty()) {
-            type = streamptr->getType();
+            auto tok = it.get();
+            type = tok.type;
             
             if(type == open) braces.push(1);
             else if(type == close) braces.pop();
 
-            if(streamptr->getNext() && !braces.empty()) {
-                streamptr = streamptr->getNext();
+            if(it.validNext() && !braces.empty()) {
+                it.next();
                 depth++;
             }
         }

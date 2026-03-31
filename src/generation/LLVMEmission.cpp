@@ -22,8 +22,8 @@ namespace nvyc {
     -- Node(FUNCTIONBODY, VOID)
            -- Node(RETURN, VOID)
                   -- Node(INT32, 12)
-
     */
+    
 
     void compileNode(EmissionBuilder* mod, const NASTNode* node) {
         NodeType type = node->getType();
@@ -147,6 +147,7 @@ namespace nvyc {
         else if(nodeType == NodeType::VARIABLE) {
             const std::string varName = node->getData().str;
             llvm::Type* varType = mod->getSymbols().getVarNativeType(varName);
+            nodeType = mod->getSymbols().getVarNvyType(varName);
             mod->populateType(result, nodeType, mod->getNativeType(nodeType));
             return mod->getBuilder().CreateLoad(varType, mod->getSymbols().getAlloca(varName));
         }

@@ -1,4 +1,4 @@
-#include "LexerCleaner.hpp"
+/*#include "LexerCleaner.hpp"
 #include <vector>
 #include <unordered_map>
 #include <regex>
@@ -12,17 +12,34 @@ using nvyc::NodeType;
 
 namespace nvyc::Processing {
 
-    void resolveFunctionCalls(NodeStream* stream) {
+    void resolveFunctionCalls(NodeStream& stream) {
+
+        auto it = stream.iterator();
+
+        while(it.get().getType() != NodeType::ENDOFSTREAM) {
+            
+            if(
+                it.get().getType() == NodeType::VARIABLE &&
+                it.validNext() &&
+                it.transient(1).getTransient().getType() == NodeType::OPENPARENS
+            ) {
+                stream.insertToken(stream.createToken(NodeType::FUNCTIONCALL, Value(stream.getValue().asString())), it.idx_it);
+            }else{
+                it.next();
+            }
+
+        }
+    }
+
         while(stream->getType() != NodeType::ENDOFLINE) {
 
-            /*
+            
             
             fun()
             By default this becomes VARIABLE OPENPARENS ... CLOSEPARENS
             It needs to transform into FUNCTIONCALL ...
-
             
-            */
+            
             if(
                 stream->getType() == NodeType::VARIABLE &&
                 stream->getNext() &&
@@ -45,6 +62,26 @@ namespace nvyc::Processing {
 
 
     // Turn BITAND BITAND into LOGICAND, Arrays, etc.
+    void resolveSpecialSymbols(NodeStream& stream) {
+        auto it = stream.iterator();
+
+        while(it.get().getType() != NodeType::ENDOFSTREAM) {
+            if(it.validNext()) {
+                NodeType ctype = it.get().getType();
+                NodeType nextType = it.transient(1).getTransient().getType();
+
+                if(nvyc::symbols::TYPE_SYMBOLS.count(ctype) && nextType == NodeType::MUL) {
+                    std::string pointerType = nvyc::symbols::nodeTypeToString(ctype);
+                    auto foot = it.spawn();
+                    while(foot.get().getType() == NodeType::MUL) {
+                        pointerType += "*";
+                        foot.next();
+                    }
+                }
+            }
+        }
+    }
+
     void resolveSpecialSymbols(NodeStream* root) {
         while(root && root->getType() != NodeType::ENDOFSTREAM) {
 
@@ -79,13 +116,13 @@ namespace nvyc::Processing {
                 ) {
                     NodeStream* array = new NodeStream(NodeType::ARRAY_TYPE, Value(currentType));
                     
-                    /*
+                    
                         Normally the stream looks like this
                         ... TYPE OPENBRKT CLOSEBRKT ...
                         P   Root N        N         N
 
                         We move to the 3rd N to get the next node
-                    */
+                    
                     array->setPrev(root->getPrev());
                     array->setNext(root->forward(3));
                     root = array->getNext();
@@ -236,3 +273,4 @@ namespace nvyc::Processing {
         return -1; // No comment found
     }
 }
+*/

@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-using nvyc::NodeStream;
 using nvyc::NodeType;
 
 namespace nvyc {
@@ -25,7 +24,7 @@ namespace nvyc {
             std::unordered_map<std::string, NodeType> rep;
             static Lexer& getInstance();
             NodeStream* lex(const std::vector<std::string>& lines);
-            NodeStream* convertNumeric(NodeType type, const std::string& value);
+            Value convertNumeric(NodeType type, const std::string& value);
             bool isNumericLiteral(const std::string& s);
             
     }; // Lexer

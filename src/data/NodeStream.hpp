@@ -4,6 +4,7 @@
 #include "data/Symbols.hpp"
 #include "data/Value.hpp"
 #include "error/Error.hpp"
+#include "data/Symbols.hpp"
 #include <cstddef>
 #include <functional>
 #include <stdexcept>
@@ -91,7 +92,7 @@ namespace nvyc {
                 }
                 
                 StreamCursor spawn() {
-                    return StreamCursor(tok_ref, idx_it)
+                    return StreamCursor(tok_ref, idx_it);
                 }
             };
 
@@ -180,6 +181,10 @@ namespace nvyc {
                 }
             }
 
+            std::string currentNodeAsString() const {
+                return "Node(" + symbols::nodeTypeToString(getType()) + " " + getValue().asString() + ")";
+            }
+
             StreamCursor iterator() const {
                 StreamCursor it(tokens, idx);
                 return it;
@@ -187,10 +192,9 @@ namespace nvyc {
 
     }; // NodeStream
 
-    std::ostream& operator<<(std::ostream& os, const NodeStream& stream) {
+    inline std::ostream& operator<<(std::ostream& os, const NodeStream& stream) {
         for(int i = 0; i < stream.size(); i++) {
-            os << "Trying idx " << i << std::endl;
-            os << "NodeStream(" << symbols::nodeTypeToString(stream.getType(i)) << ", " << stream.getValue(i).asString() << ")";
+            os << "NodeStream(" << symbols::nodeTypeToString(stream.getType(i)) << ", " << stream.getValue(i).asString() << ")\n";
         }
         return os;
     }

@@ -30,15 +30,16 @@ namespace nvyc {
             std::unique_ptr<NASTNode> parseAssign(NodeStream& stream);
             std::unique_ptr<NASTNode> parseVardef(NodeStream& stream);
             std::unique_ptr<NASTNode> parseReturn(NodeStream& stream);
-            NodeStream* getExpression(const NodeStream& stream, bool enclosed);
-            std::unique_ptr<NASTNode> parseExpression(NodeStream& stream);
+            
+            int getExpression(const NodeStream& stream, bool enclosed);
+            std::unique_ptr<NASTNode> parseExpression(NodeStream& stream, int end);
             void processOperator(std::stack<NodeType>& operatorStack, std::stack<std::unique_ptr<NASTNode>>& valueStack);
 
             // Utility
             void resolveDoubleTokens(NodeStream& stream);
             std::vector<NodeStream*> parselist(NodeStream& root);
             std::vector<std::unique_ptr<NASTNode>> parseBodyNodes(NodeStream& stream);
-            std::vector<NodeStream*> getFunctionCallArgs(NodeStream& stream);
+            std::vector<int> getFunctionCallArgs(NodeStream& stream);
 
         public:
             std::unique_ptr<NASTNode> parse(NodeStream& stream);

@@ -49,7 +49,7 @@ namespace nvyc::ParserUtils {
 
     void addBodyNode(NASTNode& node, std::unique_ptr<NASTNode> bodyNode);
     int getDepth(NodeStream&, NodeType open, NodeType close);
-    NodeStream* moveToMatchingDelimiter(NodeStream& stream, NodeType open, NodeType close);
+    int moveToMatchingDelimiter(NodeStream& stream, NodeType open, NodeType close);
     std::vector<NodeStream*> getParseList(NodeStream& root);
 
     // Functions
