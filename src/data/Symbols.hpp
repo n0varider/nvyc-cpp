@@ -20,7 +20,11 @@ namespace nvyc::symbols {
         NodeType::ELSE, NodeType::FORLOOP, NodeType::WHILELOOP,
         NodeType::NATIVE, NodeType::PUBLIC, NodeType::PRIVATE,
         NodeType::FINAL, NodeType::CONSTANT, NodeType::STRUCT,
-        NodeType::ENDOFLINE
+        NodeType::RETURN
+    };
+
+    inline const std::unordered_set<NodeType> BRACES = {
+        NodeType::OPENBRACE, NodeType::CLOSEBRACE, 
     };
 
     inline const std::unordered_set<NodeType> LITERAL_SYMBOLS = {
@@ -179,6 +183,7 @@ inline std::string nodeTypeToString(NodeType t) {
         case NodeType::BOOL_T: return "BOOL_T";
         case NodeType::STR_T: return "STR_T";
         case NodeType::TYPE_T: return "TYPE_T";
+        case NodeType::PTR_TYPE: return "PTR_T";
         case NodeType::USERTYPE_T: return "USERTYPE_T";
         case NodeType::CAST: return "CAST";
         case NodeType::VOID_T: return "VOID_T";

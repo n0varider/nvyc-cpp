@@ -139,6 +139,8 @@ namespace nvyc {
             case NodeType::STR:
             case NodeType::STR_T:
                 return builder.getPtrTy();
+            case NodeType::PTR_TYPE:
+                return builder.getPtrTy();
             default:
                 Error::nvyerr_failcompile(2, "Cannot get native type for " + symbols::nodeTypeToString(type));
         }

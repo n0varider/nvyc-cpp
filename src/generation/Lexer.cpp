@@ -31,7 +31,7 @@ const std::unordered_set<std::string> IDENTIFIERS = {
 
     "int32", "int64", "fp32", "fp64", "bool",
     "short", "char", "string", "void", "function",
-    "func", "type", "unified"
+    "func", "type", "unified", "ptr_t"
 };
 
 const std::unordered_set<std::string> OPERATORS = {
@@ -112,6 +112,7 @@ void nvyc::Lexer::init() {
     rep["unified"] = NodeType::UNIFIED;
     rep["function"] = NodeType::FUNCTION_T;
     rep["void"] = NodeType::VOID;
+    rep["ptr_t"] = NodeType::PTR_TYPE;
 
     // Modifiers
     rep["final"] = NodeType::FINAL;
@@ -220,7 +221,7 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
 
 
     // For debugging
-    int lineNumber = 0;
+    int lineNumber = 1;
 
     for(const std::string line: lines) {
         int i = 0;
@@ -268,7 +269,12 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
                 std::string longestToken = "";
 
                 // Make sure token is not a delimiter or operator, and keep building
-                while(j < line.length() && !isspace(currentChar) && !DELIMITERS.count(currentChar) && !OPERATORS.count(std::string(1, currentChar))) {
+                while(
+                    j < line.length() && 
+                    !isspace(currentChar) && 
+                    !DELIMITERS.count(currentChar) && 
+                    !OPERATORS.count(std::string(1, currentChar))
+                ) {
                     currentToken += currentChar;
                     j++;
                     currentChar = line[j];
@@ -284,14 +290,15 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
                 }else{
                     type = rep[longestToken];
                 }
-                head->addNode(type, Value(longestToken));
+
+                head->addNode(type, Value(longestToken), lineNumber);
                 i += longestToken.length();
             }
 
 
             // Delimiters are single character, so consume immediately
             else if(DELIMITERS.count(ch)) {
-                head->addNode(rep[std::string(1, ch)], Value(ch));
+                head->addNode(rep[std::string(1, ch)], Value(std::string(1,ch)), lineNumber);
                 i++;
             }
 
@@ -304,13 +311,13 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
                 std::string longestToken = "";
 
                 // Only need to see if next token is an operator, since anything else will immediately consume
-                while(!isspace(currentChar) && OPERATORS.count(std::string(1, ch))) {
+                while(!isspace(currentChar) && OPERATORS.count(std::string(1, currentChar))) {
                     longestToken += currentChar;
                     j++;
                     currentChar = line[j];
                 }
 
-                head->addNode(rep[longestToken], Value(longestToken));
+                head->addNode(rep[longestToken], Value(longestToken), lineNumber);
                 i += longestToken.length();
             }
             
@@ -328,7 +335,7 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
                 }
 
                 NodeType type = numericNativeType(number);
-                head->addNode(type, convertNumeric(type, number));
+                head->addNode(type, convertNumeric(type, number), lineNumber);
                 i += number.length();
             }
             
@@ -341,6 +348,7 @@ NodeStream* nvyc::Lexer::lex(const std::vector<std::string>& lines) {
             // Reset token
             currentToken = "";
         }
+        lineNumber++;
     }
     return head;
 }

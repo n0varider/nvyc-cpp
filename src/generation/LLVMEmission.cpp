@@ -37,6 +37,9 @@ namespace nvyc {
             case NodeType::RETURN:
                 compileReturn(mod, node);
                 break;
+            case NodeType::NATIVE:
+                compileNative(mod, node);
+                break;
         }
     }
 
@@ -51,6 +54,28 @@ namespace nvyc {
     }
 
 
+    void compileNative(EmissionBuilder* mod, const NASTNode* node) {
+        const NASTNode* fNode = node->getSubnode(0);
+        std::string funcName = fNode->getData().asString();
+        NodeType funcRType = fNode->getSubnode(1)->getSubnode(0)->getType();
+
+        std::vector<llvm::Type*> args;
+        std::vector<std::string> names;
+        bool variadic = false;
+
+        const NASTNode* variables = fNode->getSubnode(0);
+        for(const auto& vNode : variables->getSubnodes()) {
+            if(vNode->getType() == NodeType::UNIFIED) {
+                variadic = true;
+                break;
+            }
+            args.push_back(mod->getNativeType(vNode->getType()));
+            names.push_back(vNode->getData().asString());
+        }
+
+        auto Func = mod->makeFunction(funcName, names, args, funcRType, variadic);
+    }
+
 
     void compileFunction(EmissionBuilder* mod, const NASTNode* node) {
         std::string funcName = node->getData().asString();
@@ -59,8 +84,19 @@ namespace nvyc {
 
         std::vector<llvm::Type*> args;
         std::vector<std::string> names;
+        bool variadic = false;
 
-        auto Func = mod->makeFunction(funcName, names, args, funcRType, false);
+        const NASTNode* variables = node->getSubnode(0);
+        for(const auto& vNode : variables->getSubnodes()) {
+            if(vNode->getType() == NodeType::UNIFIED) {
+                variadic = true;
+                break;
+            }
+            args.push_back(mod->getNativeType(vNode->getType()));
+            names.push_back(vNode->getData().asString());
+        }
+
+        auto Func = mod->makeFunction(funcName, names, args, funcRType, variadic);
         auto block = mod->createBlock(Func, "entry");
         mod->setInsertionPoint(block);
 

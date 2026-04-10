@@ -21,6 +21,7 @@ namespace nvyc {
 
             // Block statements
             std::unique_ptr<NASTNode> parseFunction(NodeStream& stream);
+            std::unique_ptr<NASTNode> parseNativeFunction(NodeStream& stream);
             std::unique_ptr<NASTNode> parseFunctionCall(NodeStream& stream);
             std::unique_ptr<NASTNode> parseForLoop(NodeStream& stream);
             std::unique_ptr<NASTNode> parseWhileLoop(NodeStream& stream);

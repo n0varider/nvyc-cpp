@@ -19,8 +19,9 @@ namespace nvyc {
             struct Token {
                 Value val;
                 NodeType type;
+                int line;
 
-                Token(Value v, NodeType ty) : type(ty), val(v) {}
+                Token(Value v, NodeType ty, int l) : type(ty), val(v), line(l) {}
 
                 Value getValue() {
                     return val;
@@ -28,6 +29,10 @@ namespace nvyc {
 
                 NodeType getType() {
                     return type;
+                }
+
+                int getLine() {
+                    return line;
                 }
             };
 
@@ -84,6 +89,20 @@ namespace nvyc {
                     return t;
                 }
 
+                Token peek(size_t dist) {
+                    if(dist + idx_it > tok_ref.size()) {
+                        nvyc::Error::nvyerr_failcompile(1, "Attempted to peek at a token out of bounds");
+                    }
+                    Token t = tok_ref[dist + idx_it];
+                    return t;
+                }
+
+                Token behind(size_t dist) {
+                    if(dist > idx_it) dist = idx_it;
+                    Token t = tok_ref[idx_it - dist];
+                    return t;
+                }
+
                 Token get() {
                     if(idx_it < 0 || idx_it > tok_ref.size()) {
                         nvyc::Error::nvyerr_failcompile(1, "Attempted to access token out of bounds");
@@ -99,8 +118,8 @@ namespace nvyc {
         public:
             NodeStream() {}
 
-            void addNode(NodeType type, Value val) {
-                tokens.push_back(Token(val, type));
+            void addNode(NodeType type, Value val, int line) {
+                tokens.push_back(Token(val, type, line));
             }
 
             Value getValue(int i = -1) const {
@@ -137,8 +156,8 @@ namespace nvyc {
                 return tokens[idx - dist];
             }
 
-            Token createToken(NodeType ty, Value v) {
-                return Token(v, ty);
+            Token createToken(NodeType ty, Value v, int line) {
+                return Token(v, ty, line);
             }
 
             int size() const {

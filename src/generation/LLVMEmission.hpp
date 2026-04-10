@@ -15,6 +15,7 @@ namespace nvyc {
 
     void compileFunction(EmissionBuilder* mod, const NASTNode* node);
     void compileVardef(EmissionBuilder* mod, const NASTNode* node);
+    void compileNative(EmissionBuilder* mod, const NASTNode* node);
     llvm::Value* getValue(EmissionBuilder* mod, NodeType type, const Value v);
     void compileNative(std::unique_ptr<NASTNode> node);
     void compileFunctionCall(std::unique_ptr<NASTNode> node);

@@ -24,6 +24,8 @@ std::unique_ptr<NASTNode> nvyc::Parser::parse(NodeStream& stream) {
     switch(type) {
         case NodeType::FUNCTION:
             SWITCHNODE(parseFunction, stream);
+        case NodeType::NATIVE:
+            SWITCHNODE(parseNativeFunction, stream);
         case NodeType::VARDEF:
             SWITCHNODE(parseVardef, stream);
         case NodeType::RETURN:
@@ -106,7 +108,7 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
     while(stream.getType() != NodeType::CLOSEPARENS) {
         NodeType varType = stream.getType();
         std::string varName = stream.getNext().val.asString();
-        auto variableNode = nvyc::ParserUtils::createNode(NodeType::VARIABLE, Value(varName));
+        auto variableNode = nvyc::ParserUtils::createNode(varType, Value(varName));
 
         nvyc::ParserUtils::addFunctionArg(*functionNode, std::move(variableNode));
     
@@ -131,6 +133,38 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseFunction(NodeStream& stream) {
 
     return functionNode;
 
+}
+
+std::unique_ptr<NASTNode> nvyc::Parser::parseNativeFunction(NodeStream& stream) {
+    auto nativeNode = nvyc::ParserUtils::createNode(NodeType::NATIVE, Value("native"));
+    stream.forward(1); // Move past 'native'
+    stream.forward(nvyc::ParserUtils::FUNCTION_FORWARD_NAME);
+    std::string functionName = stream.getValue().asString();
+
+    stream.forward(nvyc::ParserUtils::FUNCTION_FORWARD_FIRSTARG); 
+    std::cout << symbols::nodeTypeToString(stream.getType()) << " " << stream.getValue().asString() << std::endl;
+    auto functionNode = nvyc::ParserUtils::createFunction(functionName);
+
+    while(stream.getType() != NodeType::CLOSEPARENS) {
+        NodeType varType = stream.getType();
+        std::string varName = stream.getNext().val.asString();
+        std::cout << symbols::nodeTypeToString(varType) << " " << varName << std::endl;
+        auto variableNode = nvyc::ParserUtils::createNode(varType, Value(varName));
+
+        nvyc::ParserUtils::addFunctionArg(*functionNode, std::move(variableNode));
+    
+        stream.forward(nvyc::ParserUtils::FUNCTION_FORWARD_NEXTARG);
+        if(stream.getType() == NodeType::COMMADELIMIT) stream.forward(1);
+    }
+
+    stream.forward(2); // Point at return type
+
+    auto returnType = stream.getType();
+    nvyc::ParserUtils::setFunctionReturnType(*functionNode, returnType);
+    stream.forward(2); // Move past ending ';'
+    nativeNode->addSubnode(std::move(functionNode));
+
+    return nativeNode;
 }
 
 std::unique_ptr<NASTNode> nvyc::Parser::parseConditional(NodeStream& stream) {
@@ -437,7 +471,7 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseExpression(NodeStream& stream, int 
     NodeType tokenType = stream.getType();
     int dist = 0;
 
-    while(it.validNext() && (it.next().get().getType() != NodeType::ENDOFLINE || it.next().get().getType() != NodeType::CLOSEPARENS)) {
+    while(it.validNext()) {
         tokenType = stream.getType();
         // Member access, checks if type is variable and if it has a member (x.member)
         if(
@@ -515,6 +549,7 @@ std::unique_ptr<NASTNode> nvyc::Parser::parseExpression(NodeStream& stream, int 
         dist++;
         if(dist > end) break;
     }
+    
 
     while(!operatorStack.empty()) {
         processOperator(operatorStack, valueStack);
@@ -574,6 +609,11 @@ void nvyc::Parser::processOperator(std::stack<NodeType>& operatorStack, std::sta
 
 std::unique_ptr<NASTNode> nvyc::Parser::parseReturn(NodeStream& stream) {
     stream.forward(1);
+
+    std::cout << symbols::nodeTypeToString(stream.getType()) << " " << stream.getValue().asString() << std::endl;
+    int len = getExpression(stream, nvyc::ParserUtils::LOCAL_EXPRESSION);
+    std::cout << len;
+
     auto returnValue = parseExpression(stream, getExpression(stream, nvyc::ParserUtils::LOCAL_EXPRESSION));
     return nvyc::ParserUtils::createReturn(std::move(returnValue));
 }
