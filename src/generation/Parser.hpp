@@ -16,6 +16,11 @@ namespace nvyc {
     class Parser {
 
         private:
+            // Module
+            std::string currentModule;
+            bool insideModule = false;
+            std::unique_ptr<NASTNode> parseModule(NodeStream& stream);
+
             // Struct
             std::unique_ptr<NASTNode> parseStruct(NodeStream& stream);
 
@@ -44,6 +49,7 @@ namespace nvyc {
 
         public:
             std::unique_ptr<NASTNode> parse(NodeStream& stream);
+            std::vector<std::unique_ptr<NASTNode>> parseStream(NodeStream& stream);
 
     }; // Parser
 

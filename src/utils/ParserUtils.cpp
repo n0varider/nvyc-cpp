@@ -13,6 +13,11 @@ using nvyc::NodeType;
 
 namespace nvyc::ParserUtils {
 
+    std::unique_ptr<NASTNode> createModule(const std::string& name) {
+        auto root = createNode(NodeType::MODULE, Value(name));
+        return root;
+    }
+
     void addBodyNode(NASTNode& node, std::unique_ptr<NASTNode> bodyNode) {
         NodeType type = node.getType();
 

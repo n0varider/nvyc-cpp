@@ -3,6 +3,7 @@
 #include "NodeType.hpp"
 #include <string>
 #include <cstdint>
+#include <sstream>
 #include <unordered_set>
 
 namespace nvyc::symbols {
@@ -20,7 +21,7 @@ namespace nvyc::symbols {
         NodeType::ELSE, NodeType::FORLOOP, NodeType::WHILELOOP,
         NodeType::NATIVE, NodeType::PUBLIC, NodeType::PRIVATE,
         NodeType::FINAL, NodeType::CONSTANT, NodeType::STRUCT,
-        NodeType::RETURN
+        NodeType::RETURN, NodeType::MODULE
     };
 
     inline const std::unordered_set<NodeType> BRACES = {
@@ -276,6 +277,7 @@ inline std::string nodeTypeToString(NodeType t) {
         case NodeType::DIRPRIVATE: return "DIRPRIVATE";
         case NodeType::DIRALIAS: return "DIRALIAS";
         case NodeType::DIRUSERTYPE: return "DIRUSERTYPE";
+        case NodeType::MODULE: return "MODULE";
         default: return "UNKNOWN_NODETYPE";
     }
 }
@@ -360,6 +362,53 @@ inline std::string nodeTypeToString(NodeType t) {
             case NodeType::ATTRIB:      return 14;
             default:                    return 0;
         }
+    }
+
+    /*
+    
+    Naming rules:
+    Primitive types are lowercase
+    Pointer types are uppercase
+    Struct types are T + struct name
+
+    
+    */
+    inline char charTypeId(NodeType type) {
+        switch(type) {
+            case NodeType::INT32_T:       return 'i';
+            case NodeType::INT64_T:       return 'l';
+            case NodeType::FP32_T:        return 'f';
+            case NodeType::FP64_T:        return 'd';
+            case NodeType::CHAR_T:        return 'c';
+            case NodeType::BOOL_T:        return 'b';
+            case NodeType::STR_T:         return 'S';
+            case NodeType::FUNCTION_T:    return 'F';
+            case NodeType::PTR_TYPE:      return 'P';
+            case NodeType::STRUCT:        return 'T';
+
+            // Memory
+            case NodeType::OPAQUE_PTR_T:  return 'O';
+            case NodeType::FCONST_T:      return 'n';
+            case NodeType::BOX_EMPTY:     return 'E';
+            case NodeType::BOX_GLASS:     return 'G';
+            case NodeType::BOX_OWNED:     return 'W';
+            case NodeType::BOX_LOCKED:    return 'K';
+            case NodeType::BOX_OPAQUE:    return 'Q';
+            default: "0";
+        }
+    }
+
+    inline std::string buildFunctionPrototype(const std::string& functionName, const std::vector<NodeType>& types) {
+        std::stringstream ss;
+        ss << functionName << '(';
+
+        for(int i = 0; i < types.size(); i++) {
+            ss << symbols::nodeTypeToString(types[i]);
+            if(i+1 < types.size()) ss << ", ";
+        }
+        ss << ')';
+
+        return ss.str();
     }
 
 } // namespace nvyc::data

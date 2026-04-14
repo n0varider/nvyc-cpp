@@ -47,6 +47,8 @@ namespace nvyc::ParserUtils {
         return std::make_unique<NASTNode>(type, value);
     }
 
+    std::unique_ptr<NASTNode> createModule(const std::string& name);
+
     void addBodyNode(NASTNode& node, std::unique_ptr<NASTNode> bodyNode);
     int getDepth(NodeStream&, NodeType open, NodeType close);
     int moveToMatchingDelimiter(NodeStream& stream, NodeType open, NodeType close);

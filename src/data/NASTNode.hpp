@@ -38,6 +38,11 @@ namespace nvyc {
                     type = t;
             }
 
+            // Check if this causes leak
+            void setValue(Value v) {
+                dptr = v;
+            }
+
             bool isOwned() const {
                     return owned;
             }

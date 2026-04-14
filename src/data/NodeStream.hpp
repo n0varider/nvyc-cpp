@@ -200,6 +200,10 @@ namespace nvyc {
                 }
             }
 
+            bool hasNext() {
+                return idx < tokens.size();
+            }
+
             std::string currentNodeAsString() const {
                 return "Node(" + symbols::nodeTypeToString(getType()) + " " + getValue().asString() + ")";
             }

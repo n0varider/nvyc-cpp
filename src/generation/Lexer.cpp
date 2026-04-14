@@ -28,6 +28,7 @@ const std::unordered_set<std::string> IDENTIFIERS = {
 
     "final", "static", "public", "private",
     "impl", "const", "native", "struct", "ref",
+    "module",
 
     "int32", "int64", "fp32", "fp64", "bool",
     "short", "char", "string", "void", "function",
@@ -124,6 +125,7 @@ void nvyc::Lexer::init() {
     rep["native"] = NodeType::NATIVE;
     rep["ref"] = NodeType::FINDADDRESS;
     rep["struct"] = NodeType::STRUCT;
+    rep["module"] = NodeType::MODULE,
 
     // Delimiters
     rep["("] = NodeType::OPENPARENS;
