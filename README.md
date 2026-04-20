@@ -21,8 +21,8 @@ func main() -> int32 {
 Variable declaration is unified under the `let` keyword and uses type inference unless an empty cast is provided, such as `let b = (int32);`. 
 ```
 let a = int32[12]; 				// Array
-let b = (int32);				    // Unallocated int32
-let c = (int64) 12;			   // Casts
+let b = (int32);				// Unallocated int32
+let c = (int64) 12;			    // Casts
 let d = list<int32>;		    // Generic constructor/allocation
 ```
 
