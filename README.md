@@ -26,4 +26,22 @@ let c = (int64) 12;			    // Casts
 let d = list<int32>;		    // Generic constructor/allocation
 ```
 
+Structs are allocated using the empty cast declaration.
+```
+struct mixed {
+        int32 a;
+        int64 b;
+};
 
+func add(int32 a, int64 b) -> mixed {
+        let x = (mixed);
+        x.a = a;
+        x.b = b;
+        return x;
+}
+
+func main() -> int32 {
+        let a = add(1, 2L);
+        return a.a;
+}
+```
