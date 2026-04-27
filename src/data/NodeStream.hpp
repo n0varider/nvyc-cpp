@@ -31,6 +31,10 @@ namespace nvyc {
                     return type;
                 }
 
+                void setType(NodeType ty) {
+                    type = ty;
+                }
+
                 int getLine() {
                     return line;
                 }

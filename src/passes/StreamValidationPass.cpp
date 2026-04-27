@@ -11,7 +11,15 @@ namespace nvyc::Passes {
 
     // Need a computeDist() to find where to place the ^
 
-    // Syntax check
+    /*
+
+        Syntax check
+
+        Known issues:
+        - Does not catch struct return types (will be added once structs are implemented)
+        - Tokens that do not end with a stop symbol will confuse the lookbehind check
+
+    */
     bool StreamValidationPass::validTokens(NodeStream& stream) {
         auto it = stream.iterator();
         std::stringstream ss;
@@ -35,7 +43,6 @@ namespace nvyc::Passes {
             
             // '->' must always be followed by a type
             if(ty == NodeType::RETTYPE && !nvyc::symbols::TYPE_SYMBOLS.count(nextTy)) {
-                std::cout << symbols::nodeTypeToString(ty) << " " << symbols::nodeTypeToString(nextTy) << std::endl;
                 ss << it.peek(1).getLine() << ".\n" << "Missing return type after '->'\n";
                 ss << rebuilder.getErrorLocation(it.peek(1).getLine()-1, index);
                 nvyc::Error::nvyerr_failcompile(1, ss.str());

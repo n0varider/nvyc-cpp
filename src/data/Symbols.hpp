@@ -278,6 +278,8 @@ inline std::string nodeTypeToString(NodeType t) {
         case NodeType::DIRALIAS: return "DIRALIAS";
         case NodeType::DIRUSERTYPE: return "DIRUSERTYPE";
         case NodeType::MODULE: return "MODULE";
+        case NodeType::MODULE_ACCESS: return "MODULE_ACCESS";
+        case NodeType::MODULE_NAME: return "MODULE_NAME";
         default: return "UNKNOWN_NODETYPE";
     }
 }
